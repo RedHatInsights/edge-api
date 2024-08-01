@@ -83,8 +83,9 @@ func (retries *BackoffDelay) Sleep() {
 // WaitForTask waits for the task to complete. It returns the created resource href if the task
 // is successful. If the task fails, it returns an error. If the task is cancelled, it returns an
 // error.
-func (ps *PulpService) WaitForTask(ctx context.Context, taskHref string) (string, error) {
+func (ps *PulpService) WaitForTask(ctx context.Context, taskHref string) ([]string, error) {
 	var delay BackoffDelay
+	result := make([]string, 0)
 	for {
 		delay.Sleep()
 
@@ -92,27 +93,26 @@ func (ps *PulpService) WaitForTask(ctx context.Context, taskHref string) (string
 		trp := TasksReadParams{}
 		task, err := ps.cwr.TasksReadWithResponse(ctx, ps.dom, taskID, &trp, addAuthenticationHeader)
 		if err != nil {
-			return "", err
+			return result, err
 		}
 		if task.JSON200 == nil || task.JSON200.State == nil {
-			return "", fmt.Errorf("unexpected response: %d, body: %s", task.StatusCode(), string(task.Body))
+			return result, fmt.Errorf("unexpected response: %d, body: %s", task.StatusCode(), string(task.Body))
 		}
 
 		switch *task.JSON200.State {
 		case "completed":
-			if task.JSON200.CreatedResources == nil || len(*task.JSON200.CreatedResources) != 1 {
-				return "", fmt.Errorf("unexpected number of created resources: %d, body: %s", task.StatusCode(), string(task.Body))
+			if task.JSON200.CreatedResources != nil {
+				result = append(result, *task.JSON200.CreatedResources...)
 			}
-			cr := *task.JSON200.CreatedResources
-			return cr[0], nil
+			return result, nil
 		case "failed":
-			return "", fmt.Errorf("task failed (%s): %+v", *task.JSON200.State, *task.JSON200.Error)
+			return result, fmt.Errorf("task failed (%s): %+v", *task.JSON200.State, *task.JSON200.Error)
 		case "cancelled":
-			return "", fmt.Errorf("task cancelled: %+v", *task.JSON200)
+			return result, fmt.Errorf("task cancelled: %+v", *task.JSON200)
 		}
 
 		if ctx.Err() != nil {
-			return "", ctx.Err()
+			return result, ctx.Err()
 		}
 	}
 }

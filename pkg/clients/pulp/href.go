@@ -2,6 +2,7 @@ package pulp
 
 import (
 	"regexp"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -25,4 +26,26 @@ func ScanUUID(href *string) uuid.UUID {
 		return uuid.UUID{}
 	}
 	return u
+}
+
+// /api/pulp/edge-integration-test-2/api/v3/repositories/file/file/01910e45-ceb3-7213-bed8-0727e76d0d12/versions/1/
+var repoVerRegexp = regexp.MustCompile("versions/([0-9]+)")
+
+func ScanRepoFileVersion(href *string) int64 {
+	if href == nil {
+		return 0
+	}
+
+	str := repoVerRegexp.FindStringSubmatch(*href)
+
+	if len(str) != 2 {
+		return 0
+	}
+
+	result, err := strconv.Atoi(str[1])
+	if err != nil {
+		return 0
+	}
+
+	return int64(result)
 }

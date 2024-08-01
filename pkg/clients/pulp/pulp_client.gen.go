@@ -69,6 +69,28 @@ const (
 	ArtifactsListParamsOrderingTimestampOfInterest      ArtifactsListParamsOrdering = "timestamp_of_interest"
 )
 
+// Defines values for ContentFileFilesListParamsOrdering.
+const (
+	ContentFileFilesListParamsOrderingDigest                   ContentFileFilesListParamsOrdering = "digest"
+	ContentFileFilesListParamsOrderingMinusDigest              ContentFileFilesListParamsOrdering = "-digest"
+	ContentFileFilesListParamsOrderingMinusPk                  ContentFileFilesListParamsOrdering = "-pk"
+	ContentFileFilesListParamsOrderingMinusPulpCreated         ContentFileFilesListParamsOrdering = "-pulp_created"
+	ContentFileFilesListParamsOrderingMinusPulpId              ContentFileFilesListParamsOrdering = "-pulp_id"
+	ContentFileFilesListParamsOrderingMinusPulpLastUpdated     ContentFileFilesListParamsOrdering = "-pulp_last_updated"
+	ContentFileFilesListParamsOrderingMinusPulpType            ContentFileFilesListParamsOrdering = "-pulp_type"
+	ContentFileFilesListParamsOrderingMinusRelativePath        ContentFileFilesListParamsOrdering = "-relative_path"
+	ContentFileFilesListParamsOrderingMinusTimestampOfInterest ContentFileFilesListParamsOrdering = "-timestamp_of_interest"
+	ContentFileFilesListParamsOrderingMinusUpstreamId          ContentFileFilesListParamsOrdering = "-upstream_id"
+	ContentFileFilesListParamsOrderingPk                       ContentFileFilesListParamsOrdering = "pk"
+	ContentFileFilesListParamsOrderingPulpCreated              ContentFileFilesListParamsOrdering = "pulp_created"
+	ContentFileFilesListParamsOrderingPulpId                   ContentFileFilesListParamsOrdering = "pulp_id"
+	ContentFileFilesListParamsOrderingPulpLastUpdated          ContentFileFilesListParamsOrdering = "pulp_last_updated"
+	ContentFileFilesListParamsOrderingPulpType                 ContentFileFilesListParamsOrdering = "pulp_type"
+	ContentFileFilesListParamsOrderingRelativePath             ContentFileFilesListParamsOrdering = "relative_path"
+	ContentFileFilesListParamsOrderingTimestampOfInterest      ContentFileFilesListParamsOrdering = "timestamp_of_interest"
+	ContentFileFilesListParamsOrderingUpstreamId               ContentFileFilesListParamsOrdering = "upstream_id"
+)
+
 // Defines values for ContentOstreeContentListParamsOrdering.
 const (
 	ContentOstreeContentListParamsOrderingMinusPk ContentOstreeContentListParamsOrdering = "-pk"
@@ -175,6 +197,50 @@ const (
 	DomainsListParamsOrderingStorageSettings               DomainsListParamsOrdering = "storage_settings"
 )
 
+// Defines values for RepositoriesFileFileListParamsOrdering.
+const (
+	RepositoriesFileFileListParamsOrderingDescription             RepositoriesFileFileListParamsOrdering = "description"
+	RepositoriesFileFileListParamsOrderingMinusDescription        RepositoriesFileFileListParamsOrdering = "-description"
+	RepositoriesFileFileListParamsOrderingMinusName               RepositoriesFileFileListParamsOrdering = "-name"
+	RepositoriesFileFileListParamsOrderingMinusNextVersion        RepositoriesFileFileListParamsOrdering = "-next_version"
+	RepositoriesFileFileListParamsOrderingMinusPk                 RepositoriesFileFileListParamsOrdering = "-pk"
+	RepositoriesFileFileListParamsOrderingMinusPulpCreated        RepositoriesFileFileListParamsOrdering = "-pulp_created"
+	RepositoriesFileFileListParamsOrderingMinusPulpId             RepositoriesFileFileListParamsOrdering = "-pulp_id"
+	RepositoriesFileFileListParamsOrderingMinusPulpLabels         RepositoriesFileFileListParamsOrdering = "-pulp_labels"
+	RepositoriesFileFileListParamsOrderingMinusPulpLastUpdated    RepositoriesFileFileListParamsOrdering = "-pulp_last_updated"
+	RepositoriesFileFileListParamsOrderingMinusPulpType           RepositoriesFileFileListParamsOrdering = "-pulp_type"
+	RepositoriesFileFileListParamsOrderingMinusRetainRepoVersions RepositoriesFileFileListParamsOrdering = "-retain_repo_versions"
+	RepositoriesFileFileListParamsOrderingMinusUserHidden         RepositoriesFileFileListParamsOrdering = "-user_hidden"
+	RepositoriesFileFileListParamsOrderingName                    RepositoriesFileFileListParamsOrdering = "name"
+	RepositoriesFileFileListParamsOrderingNextVersion             RepositoriesFileFileListParamsOrdering = "next_version"
+	RepositoriesFileFileListParamsOrderingPk                      RepositoriesFileFileListParamsOrdering = "pk"
+	RepositoriesFileFileListParamsOrderingPulpCreated             RepositoriesFileFileListParamsOrdering = "pulp_created"
+	RepositoriesFileFileListParamsOrderingPulpId                  RepositoriesFileFileListParamsOrdering = "pulp_id"
+	RepositoriesFileFileListParamsOrderingPulpLabels              RepositoriesFileFileListParamsOrdering = "pulp_labels"
+	RepositoriesFileFileListParamsOrderingPulpLastUpdated         RepositoriesFileFileListParamsOrdering = "pulp_last_updated"
+	RepositoriesFileFileListParamsOrderingPulpType                RepositoriesFileFileListParamsOrdering = "pulp_type"
+	RepositoriesFileFileListParamsOrderingRetainRepoVersions      RepositoriesFileFileListParamsOrdering = "retain_repo_versions"
+	RepositoriesFileFileListParamsOrderingUserHidden              RepositoriesFileFileListParamsOrdering = "user_hidden"
+)
+
+// Defines values for RepositoriesFileFileVersionsListParamsOrdering.
+const (
+	RepositoriesFileFileVersionsListParamsOrderingComplete             RepositoriesFileFileVersionsListParamsOrdering = "complete"
+	RepositoriesFileFileVersionsListParamsOrderingInfo                 RepositoriesFileFileVersionsListParamsOrdering = "info"
+	RepositoriesFileFileVersionsListParamsOrderingMinusComplete        RepositoriesFileFileVersionsListParamsOrdering = "-complete"
+	RepositoriesFileFileVersionsListParamsOrderingMinusInfo            RepositoriesFileFileVersionsListParamsOrdering = "-info"
+	RepositoriesFileFileVersionsListParamsOrderingMinusNumber          RepositoriesFileFileVersionsListParamsOrdering = "-number"
+	RepositoriesFileFileVersionsListParamsOrderingMinusPk              RepositoriesFileFileVersionsListParamsOrdering = "-pk"
+	RepositoriesFileFileVersionsListParamsOrderingMinusPulpCreated     RepositoriesFileFileVersionsListParamsOrdering = "-pulp_created"
+	RepositoriesFileFileVersionsListParamsOrderingMinusPulpId          RepositoriesFileFileVersionsListParamsOrdering = "-pulp_id"
+	RepositoriesFileFileVersionsListParamsOrderingMinusPulpLastUpdated RepositoriesFileFileVersionsListParamsOrdering = "-pulp_last_updated"
+	RepositoriesFileFileVersionsListParamsOrderingNumber               RepositoriesFileFileVersionsListParamsOrdering = "number"
+	RepositoriesFileFileVersionsListParamsOrderingPk                   RepositoriesFileFileVersionsListParamsOrdering = "pk"
+	RepositoriesFileFileVersionsListParamsOrderingPulpCreated          RepositoriesFileFileVersionsListParamsOrdering = "pulp_created"
+	RepositoriesFileFileVersionsListParamsOrderingPulpId               RepositoriesFileFileVersionsListParamsOrdering = "pulp_id"
+	RepositoriesFileFileVersionsListParamsOrderingPulpLastUpdated      RepositoriesFileFileVersionsListParamsOrdering = "pulp_last_updated"
+)
+
 // Defines values for RepositoriesOstreeOstreeListParamsOrdering.
 const (
 	RepositoriesOstreeOstreeListParamsOrderingDescription             RepositoriesOstreeOstreeListParamsOrdering = "description"
@@ -203,36 +269,36 @@ const (
 
 // Defines values for TasksListParamsOrdering.
 const (
-	EncArgs                      TasksListParamsOrdering = "enc_args"
-	EncKwargs                    TasksListParamsOrdering = "enc_kwargs"
-	Error                        TasksListParamsOrdering = "error"
-	FinishedAt                   TasksListParamsOrdering = "finished_at"
-	LoggingCid                   TasksListParamsOrdering = "logging_cid"
-	MinusEncArgs                 TasksListParamsOrdering = "-enc_args"
-	MinusEncKwargs               TasksListParamsOrdering = "-enc_kwargs"
-	MinusError                   TasksListParamsOrdering = "-error"
-	MinusFinishedAt              TasksListParamsOrdering = "-finished_at"
-	MinusLoggingCid              TasksListParamsOrdering = "-logging_cid"
-	MinusName                    TasksListParamsOrdering = "-name"
-	MinusPk                      TasksListParamsOrdering = "-pk"
-	MinusPulpCreated             TasksListParamsOrdering = "-pulp_created"
-	MinusPulpId                  TasksListParamsOrdering = "-pulp_id"
-	MinusPulpLastUpdated         TasksListParamsOrdering = "-pulp_last_updated"
-	MinusReservedResourcesRecord TasksListParamsOrdering = "-reserved_resources_record"
-	MinusStartedAt               TasksListParamsOrdering = "-started_at"
-	MinusState                   TasksListParamsOrdering = "-state"
-	MinusUnblockedAt             TasksListParamsOrdering = "-unblocked_at"
-	MinusVersions                TasksListParamsOrdering = "-versions"
-	Name                         TasksListParamsOrdering = "name"
-	Pk                           TasksListParamsOrdering = "pk"
-	PulpCreated                  TasksListParamsOrdering = "pulp_created"
-	PulpId                       TasksListParamsOrdering = "pulp_id"
-	PulpLastUpdated              TasksListParamsOrdering = "pulp_last_updated"
-	ReservedResourcesRecord      TasksListParamsOrdering = "reserved_resources_record"
-	StartedAt                    TasksListParamsOrdering = "started_at"
-	State                        TasksListParamsOrdering = "state"
-	UnblockedAt                  TasksListParamsOrdering = "unblocked_at"
-	Versions                     TasksListParamsOrdering = "versions"
+	TasksListParamsOrderingEncArgs                      TasksListParamsOrdering = "enc_args"
+	TasksListParamsOrderingEncKwargs                    TasksListParamsOrdering = "enc_kwargs"
+	TasksListParamsOrderingError                        TasksListParamsOrdering = "error"
+	TasksListParamsOrderingFinishedAt                   TasksListParamsOrdering = "finished_at"
+	TasksListParamsOrderingLoggingCid                   TasksListParamsOrdering = "logging_cid"
+	TasksListParamsOrderingMinusEncArgs                 TasksListParamsOrdering = "-enc_args"
+	TasksListParamsOrderingMinusEncKwargs               TasksListParamsOrdering = "-enc_kwargs"
+	TasksListParamsOrderingMinusError                   TasksListParamsOrdering = "-error"
+	TasksListParamsOrderingMinusFinishedAt              TasksListParamsOrdering = "-finished_at"
+	TasksListParamsOrderingMinusLoggingCid              TasksListParamsOrdering = "-logging_cid"
+	TasksListParamsOrderingMinusName                    TasksListParamsOrdering = "-name"
+	TasksListParamsOrderingMinusPk                      TasksListParamsOrdering = "-pk"
+	TasksListParamsOrderingMinusPulpCreated             TasksListParamsOrdering = "-pulp_created"
+	TasksListParamsOrderingMinusPulpId                  TasksListParamsOrdering = "-pulp_id"
+	TasksListParamsOrderingMinusPulpLastUpdated         TasksListParamsOrdering = "-pulp_last_updated"
+	TasksListParamsOrderingMinusReservedResourcesRecord TasksListParamsOrdering = "-reserved_resources_record"
+	TasksListParamsOrderingMinusStartedAt               TasksListParamsOrdering = "-started_at"
+	TasksListParamsOrderingMinusState                   TasksListParamsOrdering = "-state"
+	TasksListParamsOrderingMinusUnblockedAt             TasksListParamsOrdering = "-unblocked_at"
+	TasksListParamsOrderingMinusVersions                TasksListParamsOrdering = "-versions"
+	TasksListParamsOrderingName                         TasksListParamsOrdering = "name"
+	TasksListParamsOrderingPk                           TasksListParamsOrdering = "pk"
+	TasksListParamsOrderingPulpCreated                  TasksListParamsOrdering = "pulp_created"
+	TasksListParamsOrderingPulpId                       TasksListParamsOrdering = "pulp_id"
+	TasksListParamsOrderingPulpLastUpdated              TasksListParamsOrdering = "pulp_last_updated"
+	TasksListParamsOrderingReservedResourcesRecord      TasksListParamsOrdering = "reserved_resources_record"
+	TasksListParamsOrderingStartedAt                    TasksListParamsOrdering = "started_at"
+	TasksListParamsOrderingState                        TasksListParamsOrdering = "state"
+	TasksListParamsOrderingUnblockedAt                  TasksListParamsOrdering = "unblocked_at"
+	TasksListParamsOrderingVersions                     TasksListParamsOrdering = "versions"
 )
 
 // Defines values for TasksListParamsState.
@@ -366,6 +432,13 @@ type CompositeContentGuardResponse struct {
 
 	// PulpLastUpdated Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same.
 	PulpLastUpdated *time.Time `json:"pulp_last_updated,omitempty"`
+}
+
+// ContentSummaryResponse Serializer for the RepositoryVersion content summary
+type ContentSummaryResponse struct {
+	Added   map[string]interface{} `json:"added"`
+	Present map[string]interface{} `json:"present"`
+	Removed map[string]interface{} `json:"removed"`
 }
 
 // Domain Serializer for Domain.
@@ -576,12 +649,36 @@ type PaginatedRBACContentGuardResponseList struct {
 	Results  []RBACContentGuardResponse `json:"results"`
 }
 
+// PaginatedRepositoryVersionResponseList defines model for PaginatedRepositoryVersionResponseList.
+type PaginatedRepositoryVersionResponseList struct {
+	Count    int                         `json:"count"`
+	Next     *string                     `json:"next"`
+	Previous *string                     `json:"previous"`
+	Results  []RepositoryVersionResponse `json:"results"`
+}
+
 // PaginatedTaskResponseList defines model for PaginatedTaskResponseList.
 type PaginatedTaskResponseList struct {
 	Count    int            `json:"count"`
 	Next     *string        `json:"next"`
 	Previous *string        `json:"previous"`
 	Results  []TaskResponse `json:"results"`
+}
+
+// PaginatedfileFileContentResponseList defines model for Paginatedfile.FileContentResponseList.
+type PaginatedfileFileContentResponseList struct {
+	Count    int                       `json:"count"`
+	Next     *string                   `json:"next"`
+	Previous *string                   `json:"previous"`
+	Results  []FileFileContentResponse `json:"results"`
+}
+
+// PaginatedfileFileRepositoryResponseList defines model for Paginatedfile.FileRepositoryResponseList.
+type PaginatedfileFileRepositoryResponseList struct {
+	Count    int                          `json:"count"`
+	Next     *string                      `json:"next"`
+	Previous *string                      `json:"previous"`
+	Results  []FileFileRepositoryResponse `json:"results"`
 }
 
 // PaginatedostreeOstreeContentResponseList defines model for Paginatedostree.OstreeContentResponseList.
@@ -694,6 +791,28 @@ type PatchedRBACContentGuard struct {
 type PatchedTaskCancel struct {
 	// State The desired state of the task. Only 'canceled' is accepted.
 	State *string `json:"state,omitempty"`
+}
+
+// PatchedfileFileRepository Serializer for File Repositories.
+type PatchedfileFileRepository struct {
+	// Autopublish Whether to automatically create publications for new repository versions, and update any distributions pointing to this repository.
+	Autopublish *bool `json:"autopublish,omitempty"`
+
+	// Description An optional description.
+	Description *string `json:"description"`
+
+	// Manifest Filename to use for manifest file containing metadata for all the files.
+	Manifest *string `json:"manifest"`
+
+	// Name A unique name for this repository.
+	Name       *string             `json:"name,omitempty"`
+	PulpLabels *map[string]*string `json:"pulp_labels,omitempty"`
+
+	// Remote An optional remote to use by default when syncing.
+	Remote *string `json:"remote"`
+
+	// RetainRepoVersions Retain X versions of the repository. Default is null which retains all versions.
+	RetainRepoVersions *int64 `json:"retain_repo_versions"`
 }
 
 // PatchedostreeOstreeDistribution A Serializer class for an OSTree distribution.
@@ -811,6 +930,12 @@ type RBACContentGuardResponse struct {
 	Users           *[]GroupUserResponse `json:"users,omitempty"`
 }
 
+// Repair defines model for Repair.
+type Repair struct {
+	// VerifyChecksums Will verify that the checksum of all stored files matches what saved in the database. Otherwise only the existence of the files will be checked. Enabled by default
+	VerifyChecksums *bool `json:"verify_checksums,omitempty"`
+}
+
 // RepositoryAddRemoveContent Base serializer for use with :class:`pulpcore.app.models.Model`
 //
 // This ensures that all Serializers provide values for the 'pulp_href` field.
@@ -836,6 +961,30 @@ type RepositorySyncURL struct {
 
 	// Remote A remote to sync from. This will override a remote set on repository.
 	Remote *string `json:"remote,omitempty"`
+}
+
+// RepositoryVersionResponse Base serializer for use with :class:`pulpcore.app.models.Model`
+//
+// This ensures that all Serializers provide values for the 'pulp_href` field.
+//
+// The class provides a default for the “ref_name“ attribute in the
+// ModelSerializers's “Meta“ class. This ensures that the OpenAPI definitions
+// of plugins are namespaced properly.
+type RepositoryVersionResponse struct {
+	// BaseVersion A repository version whose content was used as the initial set of content for this repository version
+	BaseVersion *string `json:"base_version,omitempty"`
+
+	// ContentSummary Various count summaries of the content in the version and the HREF to view them.
+	ContentSummary *ContentSummaryResponse `json:"content_summary,omitempty"`
+	Number         *int64                  `json:"number,omitempty"`
+
+	// PulpCreated Timestamp of creation.
+	PulpCreated *time.Time `json:"pulp_created,omitempty"`
+	PulpHref    *string    `json:"pulp_href,omitempty"`
+
+	// PulpLastUpdated Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same.
+	PulpLastUpdated *time.Time `json:"pulp_last_updated,omitempty"`
+	Repository      *string    `json:"repository,omitempty"`
 }
 
 // SetLabel Serializer for synchronously setting a label.
@@ -929,6 +1078,114 @@ type UnsetLabel struct {
 type UnsetLabelResponse struct {
 	Key   string  `json:"key"`
 	Value *string `json:"value,omitempty"`
+}
+
+// FileFileContent Serializer for File Content.
+type FileFileContent struct {
+	// Artifact Artifact file representing the physical content
+	Artifact *string `json:"artifact,omitempty"`
+
+	// File An uploaded file that may be turned into the content unit.
+	File *openapi_types.File `json:"file,omitempty"`
+
+	// FileUrl A url that Pulp can download and turn into the content unit.
+	FileUrl *string `json:"file_url,omitempty"`
+
+	// RelativePath Path where the artifact is located relative to distributions base_path
+	RelativePath string `json:"relative_path"`
+
+	// Repository A URI of a repository the new content unit should be associated with.
+	Repository *string `json:"repository,omitempty"`
+
+	// Upload An uncommitted upload that may be turned into the content unit.
+	Upload *string `json:"upload,omitempty"`
+}
+
+// FileFileContentResponse Serializer for File Content.
+type FileFileContentResponse struct {
+	// Artifact Artifact file representing the physical content
+	Artifact *string `json:"artifact,omitempty"`
+
+	// Md5 The MD5 checksum if available.
+	Md5 *string `json:"md5,omitempty"`
+
+	// PulpCreated Timestamp of creation.
+	PulpCreated *time.Time `json:"pulp_created,omitempty"`
+	PulpHref    *string    `json:"pulp_href,omitempty"`
+
+	// PulpLastUpdated Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same.
+	PulpLastUpdated *time.Time `json:"pulp_last_updated,omitempty"`
+
+	// RelativePath Path where the artifact is located relative to distributions base_path
+	RelativePath string `json:"relative_path"`
+
+	// Sha1 The SHA-1 checksum if available.
+	Sha1 *string `json:"sha1,omitempty"`
+
+	// Sha224 The SHA-224 checksum if available.
+	Sha224 *string `json:"sha224,omitempty"`
+
+	// Sha256 The SHA-256 checksum if available.
+	Sha256 *string `json:"sha256,omitempty"`
+
+	// Sha384 The SHA-384 checksum if available.
+	Sha384 *string `json:"sha384,omitempty"`
+
+	// Sha512 The SHA-512 checksum if available.
+	Sha512 *string `json:"sha512,omitempty"`
+}
+
+// FileFileRepository Serializer for File Repositories.
+type FileFileRepository struct {
+	// Autopublish Whether to automatically create publications for new repository versions, and update any distributions pointing to this repository.
+	Autopublish *bool `json:"autopublish,omitempty"`
+
+	// Description An optional description.
+	Description *string `json:"description"`
+
+	// Manifest Filename to use for manifest file containing metadata for all the files.
+	Manifest *string `json:"manifest"`
+
+	// Name A unique name for this repository.
+	Name       string              `json:"name"`
+	PulpLabels *map[string]*string `json:"pulp_labels,omitempty"`
+
+	// Remote An optional remote to use by default when syncing.
+	Remote *string `json:"remote"`
+
+	// RetainRepoVersions Retain X versions of the repository. Default is null which retains all versions.
+	RetainRepoVersions *int64 `json:"retain_repo_versions"`
+}
+
+// FileFileRepositoryResponse Serializer for File Repositories.
+type FileFileRepositoryResponse struct {
+	// Autopublish Whether to automatically create publications for new repository versions, and update any distributions pointing to this repository.
+	Autopublish *bool `json:"autopublish,omitempty"`
+
+	// Description An optional description.
+	Description       *string `json:"description"`
+	LatestVersionHref *string `json:"latest_version_href,omitempty"`
+
+	// Manifest Filename to use for manifest file containing metadata for all the files.
+	Manifest *string `json:"manifest"`
+
+	// Name A unique name for this repository.
+	Name string `json:"name"`
+
+	// PulpCreated Timestamp of creation.
+	PulpCreated *time.Time          `json:"pulp_created,omitempty"`
+	PulpHref    *string             `json:"pulp_href,omitempty"`
+	PulpLabels  *map[string]*string `json:"pulp_labels,omitempty"`
+
+	// PulpLastUpdated Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same.
+	PulpLastUpdated *time.Time `json:"pulp_last_updated,omitempty"`
+
+	// Remote An optional remote to use by default when syncing.
+	Remote *string `json:"remote"`
+
+	// RetainRepoVersions Retain X versions of the repository. Default is null which retains all versions.
+	RetainRepoVersions *int64  `json:"retain_repo_versions"`
+	VersionsHref       *string `json:"versions_href,omitempty"`
 }
 
 // OstreeOstreeContent A Serializer class for uncategorized content units (e.g., static deltas).
@@ -1137,6 +1394,78 @@ type ArtifactsListParamsOrdering string
 
 // ArtifactsReadParams defines parameters for ArtifactsRead.
 type ArtifactsReadParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// ContentFileFilesListParams defines parameters for ContentFileFilesList.
+type ContentFileFilesListParams struct {
+	// Limit Number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset The initial index from which to return the results.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Ordering Ordering
+	//
+	// * `pulp_id` - Pulp id
+	// * `-pulp_id` - Pulp id (descending)
+	// * `pulp_created` - Pulp created
+	// * `-pulp_created` - Pulp created (descending)
+	// * `pulp_last_updated` - Pulp last updated
+	// * `-pulp_last_updated` - Pulp last updated (descending)
+	// * `pulp_type` - Pulp type
+	// * `-pulp_type` - Pulp type (descending)
+	// * `upstream_id` - Upstream id
+	// * `-upstream_id` - Upstream id (descending)
+	// * `timestamp_of_interest` - Timestamp of interest
+	// * `-timestamp_of_interest` - Timestamp of interest (descending)
+	// * `relative_path` - Relative path
+	// * `-relative_path` - Relative path (descending)
+	// * `digest` - Digest
+	// * `-digest` - Digest (descending)
+	// * `pk` - Pk
+	// * `-pk` - Pk (descending)
+	Ordering *[]ContentFileFilesListParamsOrdering `form:"ordering,omitempty" json:"ordering,omitempty"`
+
+	// OrphanedFor Minutes Content has been orphaned for. -1 uses ORPHAN_PROTECTION_TIME.
+	OrphanedFor *float32 `form:"orphaned_for,omitempty" json:"orphaned_for,omitempty"`
+
+	// PulpHrefIn Multiple values may be separated by commas.
+	PulpHrefIn *[]string `form:"pulp_href__in,omitempty" json:"pulp_href__in,omitempty"`
+
+	// PulpIdIn Multiple values may be separated by commas.
+	PulpIdIn *[]openapi_types.UUID `form:"pulp_id__in,omitempty" json:"pulp_id__in,omitempty"`
+	Q        *string               `form:"q,omitempty" json:"q,omitempty"`
+
+	// RelativePath Filter results where relative_path matches value
+	RelativePath *string `form:"relative_path,omitempty" json:"relative_path,omitempty"`
+
+	// RepositoryVersion Repository Version referenced by HREF
+	RepositoryVersion *string `form:"repository_version,omitempty" json:"repository_version,omitempty"`
+
+	// RepositoryVersionAdded Repository Version referenced by HREF
+	RepositoryVersionAdded *string `form:"repository_version_added,omitempty" json:"repository_version_added,omitempty"`
+
+	// RepositoryVersionRemoved Repository Version referenced by HREF
+	RepositoryVersionRemoved *string `form:"repository_version_removed,omitempty" json:"repository_version_removed,omitempty"`
+	Sha256                   *string `form:"sha256,omitempty" json:"sha256,omitempty"`
+
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// ContentFileFilesListParamsOrdering defines parameters for ContentFileFilesList.
+type ContentFileFilesListParamsOrdering string
+
+// ContentFileFilesReadParams defines parameters for ContentFileFilesRead.
+type ContentFileFilesReadParams struct {
 	// Fields A list of fields to include in the response.
 	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
 
@@ -1697,6 +2026,238 @@ type DomainsReadParams struct {
 	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
 }
 
+// RepositoriesFileFileListParams defines parameters for RepositoriesFileFileList.
+type RepositoriesFileFileListParams struct {
+	// LatestWithContent Content Unit referenced by HREF
+	LatestWithContent *string `form:"latest_with_content,omitempty" json:"latest_with_content,omitempty"`
+
+	// Limit Number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Name Filter results where name matches value
+	Name *string `form:"name,omitempty" json:"name,omitempty"`
+
+	// NameContains Filter results where name contains value
+	NameContains *string `form:"name__contains,omitempty" json:"name__contains,omitempty"`
+
+	// NameIcontains Filter results where name contains value
+	NameIcontains *string `form:"name__icontains,omitempty" json:"name__icontains,omitempty"`
+
+	// NameIexact Filter results where name matches value
+	NameIexact *string `form:"name__iexact,omitempty" json:"name__iexact,omitempty"`
+
+	// NameIn Filter results where name is in a comma-separated list of values
+	NameIn *[]string `form:"name__in,omitempty" json:"name__in,omitempty"`
+
+	// NameIregex Filter results where name matches regex value
+	NameIregex *string `form:"name__iregex,omitempty" json:"name__iregex,omitempty"`
+
+	// NameIstartswith Filter results where name starts with value
+	NameIstartswith *string `form:"name__istartswith,omitempty" json:"name__istartswith,omitempty"`
+
+	// NameRegex Filter results where name matches regex value
+	NameRegex *string `form:"name__regex,omitempty" json:"name__regex,omitempty"`
+
+	// NameStartswith Filter results where name starts with value
+	NameStartswith *string `form:"name__startswith,omitempty" json:"name__startswith,omitempty"`
+
+	// Offset The initial index from which to return the results.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Ordering Ordering
+	//
+	// * `pulp_id` - Pulp id
+	// * `-pulp_id` - Pulp id (descending)
+	// * `pulp_created` - Pulp created
+	// * `-pulp_created` - Pulp created (descending)
+	// * `pulp_last_updated` - Pulp last updated
+	// * `-pulp_last_updated` - Pulp last updated (descending)
+	// * `pulp_type` - Pulp type
+	// * `-pulp_type` - Pulp type (descending)
+	// * `name` - Name
+	// * `-name` - Name (descending)
+	// * `pulp_labels` - Pulp labels
+	// * `-pulp_labels` - Pulp labels (descending)
+	// * `description` - Description
+	// * `-description` - Description (descending)
+	// * `next_version` - Next version
+	// * `-next_version` - Next version (descending)
+	// * `retain_repo_versions` - Retain repo versions
+	// * `-retain_repo_versions` - Retain repo versions (descending)
+	// * `user_hidden` - User hidden
+	// * `-user_hidden` - User hidden (descending)
+	// * `pk` - Pk
+	// * `-pk` - Pk (descending)
+	Ordering *[]RepositoriesFileFileListParamsOrdering `form:"ordering,omitempty" json:"ordering,omitempty"`
+
+	// PulpHrefIn Multiple values may be separated by commas.
+	PulpHrefIn *[]string `form:"pulp_href__in,omitempty" json:"pulp_href__in,omitempty"`
+
+	// PulpIdIn Multiple values may be separated by commas.
+	PulpIdIn *[]openapi_types.UUID `form:"pulp_id__in,omitempty" json:"pulp_id__in,omitempty"`
+
+	// PulpLabelSelect Filter labels by search string
+	PulpLabelSelect *string `form:"pulp_label_select,omitempty" json:"pulp_label_select,omitempty"`
+	Q               *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Remote Foreign Key referenced by HREF
+	Remote *openapi_types.UUID `form:"remote,omitempty" json:"remote,omitempty"`
+
+	// RetainRepoVersions Filter results where retain_repo_versions matches value
+	RetainRepoVersions *int `form:"retain_repo_versions,omitempty" json:"retain_repo_versions,omitempty"`
+
+	// RetainRepoVersionsGt Filter results where retain_repo_versions is greater than value
+	RetainRepoVersionsGt *int `form:"retain_repo_versions__gt,omitempty" json:"retain_repo_versions__gt,omitempty"`
+
+	// RetainRepoVersionsGte Filter results where retain_repo_versions is greater than or equal to value
+	RetainRepoVersionsGte *int `form:"retain_repo_versions__gte,omitempty" json:"retain_repo_versions__gte,omitempty"`
+
+	// RetainRepoVersionsIsnull Filter results where retain_repo_versions has a null value
+	RetainRepoVersionsIsnull *bool `form:"retain_repo_versions__isnull,omitempty" json:"retain_repo_versions__isnull,omitempty"`
+
+	// RetainRepoVersionsLt Filter results where retain_repo_versions is less than value
+	RetainRepoVersionsLt *int `form:"retain_repo_versions__lt,omitempty" json:"retain_repo_versions__lt,omitempty"`
+
+	// RetainRepoVersionsLte Filter results where retain_repo_versions is less than or equal to value
+	RetainRepoVersionsLte *int `form:"retain_repo_versions__lte,omitempty" json:"retain_repo_versions__lte,omitempty"`
+
+	// RetainRepoVersionsNe Filter results where retain_repo_versions not equal to value
+	RetainRepoVersionsNe *int `form:"retain_repo_versions__ne,omitempty" json:"retain_repo_versions__ne,omitempty"`
+
+	// RetainRepoVersionsRange Filter results where retain_repo_versions is between two comma separated values
+	RetainRepoVersionsRange *[]int `form:"retain_repo_versions__range,omitempty" json:"retain_repo_versions__range,omitempty"`
+
+	// WithContent Content Unit referenced by HREF
+	WithContent *string `form:"with_content,omitempty" json:"with_content,omitempty"`
+
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// RepositoriesFileFileListParamsOrdering defines parameters for RepositoriesFileFileList.
+type RepositoriesFileFileListParamsOrdering string
+
+// RepositoriesFileFileReadParams defines parameters for RepositoriesFileFileRead.
+type RepositoriesFileFileReadParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// RepositoriesFileFileListRolesParams defines parameters for RepositoriesFileFileListRoles.
+type RepositoriesFileFileListRolesParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// RepositoriesFileFileMyPermissionsParams defines parameters for RepositoriesFileFileMyPermissions.
+type RepositoriesFileFileMyPermissionsParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// RepositoriesFileFileVersionsListParams defines parameters for RepositoriesFileFileVersionsList.
+type RepositoriesFileFileVersionsListParams struct {
+	// Content Content Unit referenced by HREF
+	Content *string `form:"content,omitempty" json:"content,omitempty"`
+
+	// ContentIn Content Unit referenced by HREF
+	ContentIn *string `form:"content__in,omitempty" json:"content__in,omitempty"`
+
+	// Limit Number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Number Filter results where number matches value
+	Number *int `form:"number,omitempty" json:"number,omitempty"`
+
+	// NumberGt Filter results where number is greater than value
+	NumberGt *int `form:"number__gt,omitempty" json:"number__gt,omitempty"`
+
+	// NumberGte Filter results where number is greater than or equal to value
+	NumberGte *int `form:"number__gte,omitempty" json:"number__gte,omitempty"`
+
+	// NumberLt Filter results where number is less than value
+	NumberLt *int `form:"number__lt,omitempty" json:"number__lt,omitempty"`
+
+	// NumberLte Filter results where number is less than or equal to value
+	NumberLte *int `form:"number__lte,omitempty" json:"number__lte,omitempty"`
+
+	// NumberRange Filter results where number is between two comma separated values
+	NumberRange *[]int `form:"number__range,omitempty" json:"number__range,omitempty"`
+
+	// Offset The initial index from which to return the results.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Ordering Ordering
+	//
+	// * `pulp_id` - Pulp id
+	// * `-pulp_id` - Pulp id (descending)
+	// * `pulp_created` - Pulp created
+	// * `-pulp_created` - Pulp created (descending)
+	// * `pulp_last_updated` - Pulp last updated
+	// * `-pulp_last_updated` - Pulp last updated (descending)
+	// * `number` - Number
+	// * `-number` - Number (descending)
+	// * `complete` - Complete
+	// * `-complete` - Complete (descending)
+	// * `info` - Info
+	// * `-info` - Info (descending)
+	// * `pk` - Pk
+	// * `-pk` - Pk (descending)
+	Ordering *[]RepositoriesFileFileVersionsListParamsOrdering `form:"ordering,omitempty" json:"ordering,omitempty"`
+
+	// PulpCreated Filter results where pulp_created matches value
+	PulpCreated *time.Time `form:"pulp_created,omitempty" json:"pulp_created,omitempty"`
+
+	// PulpCreatedGt Filter results where pulp_created is greater than value
+	PulpCreatedGt *time.Time `form:"pulp_created__gt,omitempty" json:"pulp_created__gt,omitempty"`
+
+	// PulpCreatedGte Filter results where pulp_created is greater than or equal to value
+	PulpCreatedGte *time.Time `form:"pulp_created__gte,omitempty" json:"pulp_created__gte,omitempty"`
+
+	// PulpCreatedLt Filter results where pulp_created is less than value
+	PulpCreatedLt *time.Time `form:"pulp_created__lt,omitempty" json:"pulp_created__lt,omitempty"`
+
+	// PulpCreatedLte Filter results where pulp_created is less than or equal to value
+	PulpCreatedLte *time.Time `form:"pulp_created__lte,omitempty" json:"pulp_created__lte,omitempty"`
+
+	// PulpCreatedRange Filter results where pulp_created is between two comma separated values
+	PulpCreatedRange *[]time.Time `form:"pulp_created__range,omitempty" json:"pulp_created__range,omitempty"`
+
+	// PulpHrefIn Multiple values may be separated by commas.
+	PulpHrefIn *[]string `form:"pulp_href__in,omitempty" json:"pulp_href__in,omitempty"`
+	Q          *string   `form:"q,omitempty" json:"q,omitempty"`
+
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// RepositoriesFileFileVersionsListParamsOrdering defines parameters for RepositoriesFileFileVersionsList.
+type RepositoriesFileFileVersionsListParamsOrdering string
+
+// RepositoriesFileFileVersionsReadParams defines parameters for RepositoriesFileFileVersionsRead.
+type RepositoriesFileFileVersionsReadParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
 // RepositoriesOstreeOstreeListParams defines parameters for RepositoriesOstreeOstreeList.
 type RepositoriesOstreeOstreeListParams struct {
 	// LatestWithContent Content Unit referenced by HREF
@@ -1937,10 +2498,7 @@ type TasksListParams struct {
 
 	// ReservedResourcesIn Multiple values may be separated by commas.
 	ReservedResourcesIn *[]string `form:"reserved_resources__in,omitempty" json:"reserved_resources__in,omitempty"`
-
-	// ReservedResourcesRecord Deprecated, will be removed in pulpcore 3.55. Use reserved_resources instead.
-	ReservedResourcesRecord *[]string `form:"reserved_resources_record,omitempty" json:"reserved_resources_record,omitempty"`
-	SharedResources         *string   `form:"shared_resources,omitempty" json:"shared_resources,omitempty"`
+	SharedResources     *string   `form:"shared_resources,omitempty" json:"shared_resources,omitempty"`
 
 	// SharedResourcesIn Multiple values may be separated by commas.
 	SharedResourcesIn *[]string `form:"shared_resources__in,omitempty" json:"shared_resources__in,omitempty"`
@@ -2037,6 +2595,12 @@ type ArtifactsCreateFormdataRequestBody = Artifact
 
 // ArtifactsCreateMultipartRequestBody defines body for ArtifactsCreate for multipart/form-data ContentType.
 type ArtifactsCreateMultipartRequestBody = Artifact
+
+// ContentFileFilesCreateFormdataRequestBody defines body for ContentFileFilesCreate for application/x-www-form-urlencoded ContentType.
+type ContentFileFilesCreateFormdataRequestBody = FileFileContent
+
+// ContentFileFilesCreateMultipartRequestBody defines body for ContentFileFilesCreate for multipart/form-data ContentType.
+type ContentFileFilesCreateMultipartRequestBody = FileFileContent
 
 // ContentOstreeContentCreateJSONRequestBody defines body for ContentOstreeContentCreate for application/json ContentType.
 type ContentOstreeContentCreateJSONRequestBody = OstreeOstreeContent
@@ -2272,6 +2836,96 @@ type DomainsUpdateFormdataRequestBody = Domain
 // DomainsUpdateMultipartRequestBody defines body for DomainsUpdate for multipart/form-data ContentType.
 type DomainsUpdateMultipartRequestBody = Domain
 
+// RepositoriesFileFileCreateJSONRequestBody defines body for RepositoriesFileFileCreate for application/json ContentType.
+type RepositoriesFileFileCreateJSONRequestBody = FileFileRepository
+
+// RepositoriesFileFileCreateFormdataRequestBody defines body for RepositoriesFileFileCreate for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileCreateFormdataRequestBody = FileFileRepository
+
+// RepositoriesFileFileCreateMultipartRequestBody defines body for RepositoriesFileFileCreate for multipart/form-data ContentType.
+type RepositoriesFileFileCreateMultipartRequestBody = FileFileRepository
+
+// RepositoriesFileFilePartialUpdateJSONRequestBody defines body for RepositoriesFileFilePartialUpdate for application/json ContentType.
+type RepositoriesFileFilePartialUpdateJSONRequestBody = PatchedfileFileRepository
+
+// RepositoriesFileFilePartialUpdateFormdataRequestBody defines body for RepositoriesFileFilePartialUpdate for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFilePartialUpdateFormdataRequestBody = PatchedfileFileRepository
+
+// RepositoriesFileFilePartialUpdateMultipartRequestBody defines body for RepositoriesFileFilePartialUpdate for multipart/form-data ContentType.
+type RepositoriesFileFilePartialUpdateMultipartRequestBody = PatchedfileFileRepository
+
+// RepositoriesFileFileUpdateJSONRequestBody defines body for RepositoriesFileFileUpdate for application/json ContentType.
+type RepositoriesFileFileUpdateJSONRequestBody = FileFileRepository
+
+// RepositoriesFileFileUpdateFormdataRequestBody defines body for RepositoriesFileFileUpdate for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileUpdateFormdataRequestBody = FileFileRepository
+
+// RepositoriesFileFileUpdateMultipartRequestBody defines body for RepositoriesFileFileUpdate for multipart/form-data ContentType.
+type RepositoriesFileFileUpdateMultipartRequestBody = FileFileRepository
+
+// RepositoriesFileFileAddRoleJSONRequestBody defines body for RepositoriesFileFileAddRole for application/json ContentType.
+type RepositoriesFileFileAddRoleJSONRequestBody = NestedRole
+
+// RepositoriesFileFileAddRoleFormdataRequestBody defines body for RepositoriesFileFileAddRole for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileAddRoleFormdataRequestBody = NestedRole
+
+// RepositoriesFileFileAddRoleMultipartRequestBody defines body for RepositoriesFileFileAddRole for multipart/form-data ContentType.
+type RepositoriesFileFileAddRoleMultipartRequestBody = NestedRole
+
+// RepositoriesFileFileModifyJSONRequestBody defines body for RepositoriesFileFileModify for application/json ContentType.
+type RepositoriesFileFileModifyJSONRequestBody = RepositoryAddRemoveContent
+
+// RepositoriesFileFileModifyFormdataRequestBody defines body for RepositoriesFileFileModify for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileModifyFormdataRequestBody = RepositoryAddRemoveContent
+
+// RepositoriesFileFileModifyMultipartRequestBody defines body for RepositoriesFileFileModify for multipart/form-data ContentType.
+type RepositoriesFileFileModifyMultipartRequestBody = RepositoryAddRemoveContent
+
+// RepositoriesFileFileRemoveRoleJSONRequestBody defines body for RepositoriesFileFileRemoveRole for application/json ContentType.
+type RepositoriesFileFileRemoveRoleJSONRequestBody = NestedRole
+
+// RepositoriesFileFileRemoveRoleFormdataRequestBody defines body for RepositoriesFileFileRemoveRole for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileRemoveRoleFormdataRequestBody = NestedRole
+
+// RepositoriesFileFileRemoveRoleMultipartRequestBody defines body for RepositoriesFileFileRemoveRole for multipart/form-data ContentType.
+type RepositoriesFileFileRemoveRoleMultipartRequestBody = NestedRole
+
+// RepositoriesFileFileSetLabelJSONRequestBody defines body for RepositoriesFileFileSetLabel for application/json ContentType.
+type RepositoriesFileFileSetLabelJSONRequestBody = SetLabel
+
+// RepositoriesFileFileSetLabelFormdataRequestBody defines body for RepositoriesFileFileSetLabel for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileSetLabelFormdataRequestBody = SetLabel
+
+// RepositoriesFileFileSetLabelMultipartRequestBody defines body for RepositoriesFileFileSetLabel for multipart/form-data ContentType.
+type RepositoriesFileFileSetLabelMultipartRequestBody = SetLabel
+
+// RepositoriesFileFileSyncJSONRequestBody defines body for RepositoriesFileFileSync for application/json ContentType.
+type RepositoriesFileFileSyncJSONRequestBody = RepositorySyncURL
+
+// RepositoriesFileFileSyncFormdataRequestBody defines body for RepositoriesFileFileSync for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileSyncFormdataRequestBody = RepositorySyncURL
+
+// RepositoriesFileFileSyncMultipartRequestBody defines body for RepositoriesFileFileSync for multipart/form-data ContentType.
+type RepositoriesFileFileSyncMultipartRequestBody = RepositorySyncURL
+
+// RepositoriesFileFileUnsetLabelJSONRequestBody defines body for RepositoriesFileFileUnsetLabel for application/json ContentType.
+type RepositoriesFileFileUnsetLabelJSONRequestBody = UnsetLabel
+
+// RepositoriesFileFileUnsetLabelFormdataRequestBody defines body for RepositoriesFileFileUnsetLabel for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileUnsetLabelFormdataRequestBody = UnsetLabel
+
+// RepositoriesFileFileUnsetLabelMultipartRequestBody defines body for RepositoriesFileFileUnsetLabel for multipart/form-data ContentType.
+type RepositoriesFileFileUnsetLabelMultipartRequestBody = UnsetLabel
+
+// RepositoriesFileFileVersionsRepairJSONRequestBody defines body for RepositoriesFileFileVersionsRepair for application/json ContentType.
+type RepositoriesFileFileVersionsRepairJSONRequestBody = Repair
+
+// RepositoriesFileFileVersionsRepairFormdataRequestBody defines body for RepositoriesFileFileVersionsRepair for application/x-www-form-urlencoded ContentType.
+type RepositoriesFileFileVersionsRepairFormdataRequestBody = Repair
+
+// RepositoriesFileFileVersionsRepairMultipartRequestBody defines body for RepositoriesFileFileVersionsRepair for multipart/form-data ContentType.
+type RepositoriesFileFileVersionsRepairMultipartRequestBody = Repair
+
 // RepositoriesOstreeOstreeCreateJSONRequestBody defines body for RepositoriesOstreeOstreeCreate for application/json ContentType.
 type RepositoriesOstreeOstreeCreateJSONRequestBody = OstreeOstreeRepository
 
@@ -2493,6 +3147,17 @@ type ClientInterface interface {
 
 	// ArtifactsRead request
 	ArtifactsRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ArtifactsReadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentFileFilesList request
+	ContentFileFilesList(ctx context.Context, pulpDomain string, params *ContentFileFilesListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentFileFilesCreateWithBody request with any body
+	ContentFileFilesCreateWithBody(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentFileFilesCreateWithFormdataBody(ctx context.Context, pulpDomain string, body ContentFileFilesCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentFileFilesRead request
+	ContentFileFilesRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentFileFilesReadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ContentOstreeContentList request
 	ContentOstreeContentList(ctx context.Context, pulpDomain string, params *ContentOstreeContentListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2751,6 +3416,100 @@ type ClientInterface interface {
 
 	DomainsUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body DomainsUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RepositoriesFileFileList request
+	RepositoriesFileFileList(ctx context.Context, pulpDomain string, params *RepositoriesFileFileListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileCreateWithBody request with any body
+	RepositoriesFileFileCreateWithBody(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileCreate(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileCreateWithFormdataBody(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileDelete request
+	RepositoriesFileFileDelete(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileRead request
+	RepositoriesFileFileRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileReadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFilePartialUpdateWithBody request with any body
+	RepositoriesFileFilePartialUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFilePartialUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFilePartialUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileUpdateWithBody request with any body
+	RepositoriesFileFileUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileAddRoleWithBody request with any body
+	RepositoriesFileFileAddRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileAddRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileAddRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileListRoles request
+	RepositoriesFileFileListRoles(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileModifyWithBody request with any body
+	RepositoriesFileFileModifyWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileModify(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileModifyWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileMyPermissions request
+	RepositoriesFileFileMyPermissions(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileMyPermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileRemoveRoleWithBody request with any body
+	RepositoriesFileFileRemoveRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileRemoveRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileRemoveRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileSetLabelWithBody request with any body
+	RepositoriesFileFileSetLabelWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileSetLabel(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileSetLabelWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileSyncWithBody request with any body
+	RepositoriesFileFileSyncWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileSync(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileSyncWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileUnsetLabelWithBody request with any body
+	RepositoriesFileFileUnsetLabelWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileUnsetLabel(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileUnsetLabelWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileVersionsList request
+	RepositoriesFileFileVersionsList(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, params *RepositoriesFileFileVersionsListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileVersionsDelete request
+	RepositoriesFileFileVersionsDelete(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileVersionsRead request
+	RepositoriesFileFileVersionsRead(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, params *RepositoriesFileFileVersionsReadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepositoriesFileFileVersionsRepairWithBody request with any body
+	RepositoriesFileFileVersionsRepairWithBody(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileVersionsRepair(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RepositoriesFileFileVersionsRepairWithFormdataBody(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RepositoriesOstreeOstreeList request
 	RepositoriesOstreeOstreeList(ctx context.Context, pulpDomain string, params *RepositoriesOstreeOstreeListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2937,6 +3696,54 @@ func (c *Client) ArtifactsDelete(ctx context.Context, pulpDomain string, pulpId 
 
 func (c *Client) ArtifactsRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ArtifactsReadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewArtifactsReadRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentFileFilesList(ctx context.Context, pulpDomain string, params *ContentFileFilesListParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentFileFilesListRequest(c.Server, pulpDomain, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentFileFilesCreateWithBody(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentFileFilesCreateRequestWithBody(c.Server, pulpDomain, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentFileFilesCreateWithFormdataBody(ctx context.Context, pulpDomain string, body ContentFileFilesCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentFileFilesCreateRequestWithFormdataBody(c.Server, pulpDomain, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentFileFilesRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentFileFilesReadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentFileFilesReadRequest(c.Server, pulpDomain, pulpId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -4183,6 +4990,462 @@ func (c *Client) DomainsUpdateWithFormdataBody(ctx context.Context, pulpDomain s
 	return c.Client.Do(req)
 }
 
+func (c *Client) RepositoriesFileFileList(ctx context.Context, pulpDomain string, params *RepositoriesFileFileListParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileListRequest(c.Server, pulpDomain, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileCreateWithBody(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileCreateRequestWithBody(c.Server, pulpDomain, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileCreate(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileCreateRequest(c.Server, pulpDomain, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileCreateWithFormdataBody(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileCreateRequestWithFormdataBody(c.Server, pulpDomain, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileDelete(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileDeleteRequest(c.Server, pulpDomain, pulpId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileReadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileReadRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFilePartialUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFilePartialUpdateRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFilePartialUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFilePartialUpdateRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFilePartialUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFilePartialUpdateRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileUpdateRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileUpdateRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileUpdateRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileAddRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileAddRoleRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileAddRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileAddRoleRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileAddRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileAddRoleRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileListRoles(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileListRolesRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileModifyWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileModifyRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileModify(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileModifyRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileModifyWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileModifyRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileMyPermissions(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileMyPermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileMyPermissionsRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileRemoveRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileRemoveRoleRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileRemoveRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileRemoveRoleRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileRemoveRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileRemoveRoleRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileSetLabelWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileSetLabelRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileSetLabel(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileSetLabelRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileSetLabelWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileSetLabelRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileSyncWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileSyncRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileSync(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileSyncRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileSyncWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileSyncRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileUnsetLabelWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileUnsetLabelRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileUnsetLabel(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileUnsetLabelRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileUnsetLabelWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileUnsetLabelRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileVersionsList(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, params *RepositoriesFileFileVersionsListParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileVersionsListRequest(c.Server, pulpDomain, repositoryPk, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileVersionsDelete(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileVersionsDeleteRequest(c.Server, pulpDomain, repositoryPk, number)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileVersionsRead(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, params *RepositoriesFileFileVersionsReadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileVersionsReadRequest(c.Server, pulpDomain, repositoryPk, number, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileVersionsRepairWithBody(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileVersionsRepairRequestWithBody(c.Server, pulpDomain, repositoryPk, number, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileVersionsRepair(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileVersionsRepairRequest(c.Server, pulpDomain, repositoryPk, number, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepositoriesFileFileVersionsRepairWithFormdataBody(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepositoriesFileFileVersionsRepairRequestWithFormdataBody(c.Server, pulpDomain, repositoryPk, number, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) RepositoriesOstreeOstreeList(ctx context.Context, pulpDomain string, params *RepositoriesOstreeOstreeListParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRepositoriesOstreeOstreeListRequest(c.Server, pulpDomain, params)
 	if err != nil {
@@ -5251,6 +6514,396 @@ func NewArtifactsReadRequest(server string, pulpDomain string, pulpId openapi_ty
 	}
 
 	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/artifacts/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentFileFilesListRequest generates requests for ContentFileFilesList
+func NewContentFileFilesListRequest(server string, pulpDomain string, params *ContentFileFilesListParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/content/file/files/", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Ordering != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "ordering", runtime.ParamLocationQuery, *params.Ordering); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.OrphanedFor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "orphaned_for", runtime.ParamLocationQuery, *params.OrphanedFor); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpHrefIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_href__in", runtime.ParamLocationQuery, *params.PulpHrefIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpIdIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_id__in", runtime.ParamLocationQuery, *params.PulpIdIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "q", runtime.ParamLocationQuery, *params.Q); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RelativePath != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "relative_path", runtime.ParamLocationQuery, *params.RelativePath); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RepositoryVersion != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "repository_version", runtime.ParamLocationQuery, *params.RepositoryVersion); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RepositoryVersionAdded != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "repository_version_added", runtime.ParamLocationQuery, *params.RepositoryVersionAdded); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RepositoryVersionRemoved != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "repository_version_removed", runtime.ParamLocationQuery, *params.RepositoryVersionRemoved); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Sha256 != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "sha256", runtime.ParamLocationQuery, *params.Sha256); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentFileFilesCreateRequestWithFormdataBody calls the generic ContentFileFilesCreate builder with application/x-www-form-urlencoded body
+func NewContentFileFilesCreateRequestWithFormdataBody(server string, pulpDomain string, body ContentFileFilesCreateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewContentFileFilesCreateRequestWithBody(server, pulpDomain, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewContentFileFilesCreateRequestWithBody generates requests for ContentFileFilesCreate with any type of body
+func NewContentFileFilesCreateRequestWithBody(server string, pulpDomain string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/content/file/files/", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewContentFileFilesReadRequest generates requests for ContentFileFilesRead
+func NewContentFileFilesReadRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *ContentFileFilesReadParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/content/file/files/%s/", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10185,6 +11838,1955 @@ func NewDomainsUpdateRequestWithBody(server string, pulpDomain string, pulpId op
 	return req, nil
 }
 
+// NewRepositoriesFileFileListRequest generates requests for RepositoriesFileFileList
+func NewRepositoriesFileFileListRequest(server string, pulpDomain string, params *RepositoriesFileFileListParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.LatestWithContent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "latest_with_content", runtime.ParamLocationQuery, *params.LatestWithContent); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Name != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name", runtime.ParamLocationQuery, *params.Name); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameContains != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__contains", runtime.ParamLocationQuery, *params.NameContains); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIcontains != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__icontains", runtime.ParamLocationQuery, *params.NameIcontains); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIexact != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__iexact", runtime.ParamLocationQuery, *params.NameIexact); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "name__in", runtime.ParamLocationQuery, *params.NameIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIregex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__iregex", runtime.ParamLocationQuery, *params.NameIregex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIstartswith != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__istartswith", runtime.ParamLocationQuery, *params.NameIstartswith); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameRegex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__regex", runtime.ParamLocationQuery, *params.NameRegex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameStartswith != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__startswith", runtime.ParamLocationQuery, *params.NameStartswith); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Ordering != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "ordering", runtime.ParamLocationQuery, *params.Ordering); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpHrefIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_href__in", runtime.ParamLocationQuery, *params.PulpHrefIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpIdIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_id__in", runtime.ParamLocationQuery, *params.PulpIdIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpLabelSelect != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "pulp_label_select", runtime.ParamLocationQuery, *params.PulpLabelSelect); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "q", runtime.ParamLocationQuery, *params.Q); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Remote != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "remote", runtime.ParamLocationQuery, *params.Remote); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersions != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions", runtime.ParamLocationQuery, *params.RetainRepoVersions); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsGt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions__gt", runtime.ParamLocationQuery, *params.RetainRepoVersionsGt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsGte != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions__gte", runtime.ParamLocationQuery, *params.RetainRepoVersionsGte); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsIsnull != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions__isnull", runtime.ParamLocationQuery, *params.RetainRepoVersionsIsnull); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsLt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions__lt", runtime.ParamLocationQuery, *params.RetainRepoVersionsLt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsLte != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions__lte", runtime.ParamLocationQuery, *params.RetainRepoVersionsLte); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsNe != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "retain_repo_versions__ne", runtime.ParamLocationQuery, *params.RetainRepoVersionsNe); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.RetainRepoVersionsRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "retain_repo_versions__range", runtime.ParamLocationQuery, *params.RetainRepoVersionsRange); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.WithContent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "with_content", runtime.ParamLocationQuery, *params.WithContent); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileCreateRequest calls the generic RepositoriesFileFileCreate builder with application/json body
+func NewRepositoriesFileFileCreateRequest(server string, pulpDomain string, body RepositoriesFileFileCreateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileCreateRequestWithBody(server, pulpDomain, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileCreateRequestWithFormdataBody calls the generic RepositoriesFileFileCreate builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileCreateRequestWithFormdataBody(server string, pulpDomain string, body RepositoriesFileFileCreateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileCreateRequestWithBody(server, pulpDomain, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileCreateRequestWithBody generates requests for RepositoriesFileFileCreate with any type of body
+func NewRepositoriesFileFileCreateRequestWithBody(server string, pulpDomain string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileDeleteRequest generates requests for RepositoriesFileFileDelete
+func NewRepositoriesFileFileDeleteRequest(server string, pulpDomain string, pulpId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileReadRequest generates requests for RepositoriesFileFileRead
+func NewRepositoriesFileFileReadRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileReadParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFilePartialUpdateRequest calls the generic RepositoriesFileFilePartialUpdate builder with application/json body
+func NewRepositoriesFileFilePartialUpdateRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFilePartialUpdateRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFilePartialUpdateRequestWithFormdataBody calls the generic RepositoriesFileFilePartialUpdate builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFilePartialUpdateRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFilePartialUpdateRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFilePartialUpdateRequestWithBody generates requests for RepositoriesFileFilePartialUpdate with any type of body
+func NewRepositoriesFileFilePartialUpdateRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileUpdateRequest calls the generic RepositoriesFileFileUpdate builder with application/json body
+func NewRepositoriesFileFileUpdateRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileUpdateRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileUpdateRequestWithFormdataBody calls the generic RepositoriesFileFileUpdate builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileUpdateRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileUpdateRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileUpdateRequestWithBody generates requests for RepositoriesFileFileUpdate with any type of body
+func NewRepositoriesFileFileUpdateRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileAddRoleRequest calls the generic RepositoriesFileFileAddRole builder with application/json body
+func NewRepositoriesFileFileAddRoleRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileAddRoleRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileAddRoleRequestWithFormdataBody calls the generic RepositoriesFileFileAddRole builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileAddRoleRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileAddRoleRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileAddRoleRequestWithBody generates requests for RepositoriesFileFileAddRole with any type of body
+func NewRepositoriesFileFileAddRoleRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/add_role/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileListRolesRequest generates requests for RepositoriesFileFileListRoles
+func NewRepositoriesFileFileListRolesRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileListRolesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/list_roles/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileModifyRequest calls the generic RepositoriesFileFileModify builder with application/json body
+func NewRepositoriesFileFileModifyRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileModifyRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileModifyRequestWithFormdataBody calls the generic RepositoriesFileFileModify builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileModifyRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileModifyRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileModifyRequestWithBody generates requests for RepositoriesFileFileModify with any type of body
+func NewRepositoriesFileFileModifyRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/modify/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileMyPermissionsRequest generates requests for RepositoriesFileFileMyPermissions
+func NewRepositoriesFileFileMyPermissionsRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileMyPermissionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/my_permissions/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileRemoveRoleRequest calls the generic RepositoriesFileFileRemoveRole builder with application/json body
+func NewRepositoriesFileFileRemoveRoleRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileRemoveRoleRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileRemoveRoleRequestWithFormdataBody calls the generic RepositoriesFileFileRemoveRole builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileRemoveRoleRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileRemoveRoleRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileRemoveRoleRequestWithBody generates requests for RepositoriesFileFileRemoveRole with any type of body
+func NewRepositoriesFileFileRemoveRoleRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/remove_role/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileSetLabelRequest calls the generic RepositoriesFileFileSetLabel builder with application/json body
+func NewRepositoriesFileFileSetLabelRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileSetLabelRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileSetLabelRequestWithFormdataBody calls the generic RepositoriesFileFileSetLabel builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileSetLabelRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileSetLabelRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileSetLabelRequestWithBody generates requests for RepositoriesFileFileSetLabel with any type of body
+func NewRepositoriesFileFileSetLabelRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/set_label/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileSyncRequest calls the generic RepositoriesFileFileSync builder with application/json body
+func NewRepositoriesFileFileSyncRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileSyncRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileSyncRequestWithFormdataBody calls the generic RepositoriesFileFileSync builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileSyncRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileSyncRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileSyncRequestWithBody generates requests for RepositoriesFileFileSync with any type of body
+func NewRepositoriesFileFileSyncRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/sync/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileUnsetLabelRequest calls the generic RepositoriesFileFileUnsetLabel builder with application/json body
+func NewRepositoriesFileFileUnsetLabelRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileUnsetLabelRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileUnsetLabelRequestWithFormdataBody calls the generic RepositoriesFileFileUnsetLabel builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileUnsetLabelRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileUnsetLabelRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileUnsetLabelRequestWithBody generates requests for RepositoriesFileFileUnsetLabel with any type of body
+func NewRepositoriesFileFileUnsetLabelRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/unset_label/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileVersionsListRequest generates requests for RepositoriesFileFileVersionsList
+func NewRepositoriesFileFileVersionsListRequest(server string, pulpDomain string, repositoryPk openapi_types.UUID, params *RepositoriesFileFileVersionsListParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repository_pk", runtime.ParamLocationPath, repositoryPk)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/versions/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Content != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "content", runtime.ParamLocationQuery, *params.Content); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ContentIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "content__in", runtime.ParamLocationQuery, *params.ContentIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Number != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "number", runtime.ParamLocationQuery, *params.Number); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NumberGt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "number__gt", runtime.ParamLocationQuery, *params.NumberGt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NumberGte != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "number__gte", runtime.ParamLocationQuery, *params.NumberGte); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NumberLt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "number__lt", runtime.ParamLocationQuery, *params.NumberLt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NumberLte != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "number__lte", runtime.ParamLocationQuery, *params.NumberLte); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NumberRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "number__range", runtime.ParamLocationQuery, *params.NumberRange); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Ordering != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "ordering", runtime.ParamLocationQuery, *params.Ordering); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpCreated != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "pulp_created", runtime.ParamLocationQuery, *params.PulpCreated); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpCreatedGt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "pulp_created__gt", runtime.ParamLocationQuery, *params.PulpCreatedGt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpCreatedGte != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "pulp_created__gte", runtime.ParamLocationQuery, *params.PulpCreatedGte); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpCreatedLt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "pulp_created__lt", runtime.ParamLocationQuery, *params.PulpCreatedLt); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpCreatedLte != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "pulp_created__lte", runtime.ParamLocationQuery, *params.PulpCreatedLte); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpCreatedRange != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_created__range", runtime.ParamLocationQuery, *params.PulpCreatedRange); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpHrefIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_href__in", runtime.ParamLocationQuery, *params.PulpHrefIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "q", runtime.ParamLocationQuery, *params.Q); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileVersionsDeleteRequest generates requests for RepositoriesFileFileVersionsDelete
+func NewRepositoriesFileFileVersionsDeleteRequest(server string, pulpDomain string, repositoryPk openapi_types.UUID, number int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repository_pk", runtime.ParamLocationPath, repositoryPk)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "number", runtime.ParamLocationPath, number)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/versions/%s/", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileVersionsReadRequest generates requests for RepositoriesFileFileVersionsRead
+func NewRepositoriesFileFileVersionsReadRequest(server string, pulpDomain string, repositoryPk openapi_types.UUID, number int64, params *RepositoriesFileFileVersionsReadParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repository_pk", runtime.ParamLocationPath, repositoryPk)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "number", runtime.ParamLocationPath, number)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/versions/%s/", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepositoriesFileFileVersionsRepairRequest calls the generic RepositoriesFileFileVersionsRepair builder with application/json body
+func NewRepositoriesFileFileVersionsRepairRequest(server string, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRepositoriesFileFileVersionsRepairRequestWithBody(server, pulpDomain, repositoryPk, number, "application/json", bodyReader)
+}
+
+// NewRepositoriesFileFileVersionsRepairRequestWithFormdataBody calls the generic RepositoriesFileFileVersionsRepair builder with application/x-www-form-urlencoded body
+func NewRepositoriesFileFileVersionsRepairRequestWithFormdataBody(server string, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRepositoriesFileFileVersionsRepairRequestWithBody(server, pulpDomain, repositoryPk, number, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRepositoriesFileFileVersionsRepairRequestWithBody generates requests for RepositoriesFileFileVersionsRepair with any type of body
+func NewRepositoriesFileFileVersionsRepairRequestWithBody(server string, pulpDomain string, repositoryPk openapi_types.UUID, number int64, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repository_pk", runtime.ParamLocationPath, repositoryPk)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "number", runtime.ParamLocationPath, number)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/repositories/file/file/%s/versions/%s/repair/", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewRepositoriesOstreeOstreeListRequest generates requests for RepositoriesOstreeOstreeList
 func NewRepositoriesOstreeOstreeListRequest(server string, pulpDomain string, params *RepositoriesOstreeOstreeListParams) (*http.Request, error) {
 	var err error
@@ -12104,22 +15706,6 @@ func NewTasksListRequest(server string, pulpDomain string, params *TasksListPara
 
 		}
 
-		if params.ReservedResourcesRecord != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "reserved_resources_record", runtime.ParamLocationQuery, *params.ReservedResourcesRecord); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
 		if params.SharedResources != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "shared_resources", runtime.ParamLocationQuery, *params.SharedResources); err != nil {
@@ -12991,6 +16577,17 @@ type ClientWithResponsesInterface interface {
 	// ArtifactsReadWithResponse request
 	ArtifactsReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ArtifactsReadParams, reqEditors ...RequestEditorFn) (*ArtifactsReadResponse, error)
 
+	// ContentFileFilesListWithResponse request
+	ContentFileFilesListWithResponse(ctx context.Context, pulpDomain string, params *ContentFileFilesListParams, reqEditors ...RequestEditorFn) (*ContentFileFilesListResponse, error)
+
+	// ContentFileFilesCreateWithBodyWithResponse request with any body
+	ContentFileFilesCreateWithBodyWithResponse(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentFileFilesCreateResponse, error)
+
+	ContentFileFilesCreateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, body ContentFileFilesCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentFileFilesCreateResponse, error)
+
+	// ContentFileFilesReadWithResponse request
+	ContentFileFilesReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentFileFilesReadParams, reqEditors ...RequestEditorFn) (*ContentFileFilesReadResponse, error)
+
 	// ContentOstreeContentListWithResponse request
 	ContentOstreeContentListWithResponse(ctx context.Context, pulpDomain string, params *ContentOstreeContentListParams, reqEditors ...RequestEditorFn) (*ContentOstreeContentListResponse, error)
 
@@ -13248,6 +16845,100 @@ type ClientWithResponsesInterface interface {
 
 	DomainsUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body DomainsUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*DomainsUpdateResponse, error)
 
+	// RepositoriesFileFileListWithResponse request
+	RepositoriesFileFileListWithResponse(ctx context.Context, pulpDomain string, params *RepositoriesFileFileListParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileListResponse, error)
+
+	// RepositoriesFileFileCreateWithBodyWithResponse request with any body
+	RepositoriesFileFileCreateWithBodyWithResponse(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileCreateResponse, error)
+
+	RepositoriesFileFileCreateWithResponse(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileCreateResponse, error)
+
+	RepositoriesFileFileCreateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileCreateResponse, error)
+
+	// RepositoriesFileFileDeleteWithResponse request
+	RepositoriesFileFileDeleteWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RepositoriesFileFileDeleteResponse, error)
+
+	// RepositoriesFileFileReadWithResponse request
+	RepositoriesFileFileReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileReadParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileReadResponse, error)
+
+	// RepositoriesFileFilePartialUpdateWithBodyWithResponse request with any body
+	RepositoriesFileFilePartialUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFilePartialUpdateResponse, error)
+
+	RepositoriesFileFilePartialUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFilePartialUpdateResponse, error)
+
+	RepositoriesFileFilePartialUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFilePartialUpdateResponse, error)
+
+	// RepositoriesFileFileUpdateWithBodyWithResponse request with any body
+	RepositoriesFileFileUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUpdateResponse, error)
+
+	RepositoriesFileFileUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUpdateResponse, error)
+
+	RepositoriesFileFileUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUpdateResponse, error)
+
+	// RepositoriesFileFileAddRoleWithBodyWithResponse request with any body
+	RepositoriesFileFileAddRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileAddRoleResponse, error)
+
+	RepositoriesFileFileAddRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileAddRoleResponse, error)
+
+	RepositoriesFileFileAddRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileAddRoleResponse, error)
+
+	// RepositoriesFileFileListRolesWithResponse request
+	RepositoriesFileFileListRolesWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileListRolesParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileListRolesResponse, error)
+
+	// RepositoriesFileFileModifyWithBodyWithResponse request with any body
+	RepositoriesFileFileModifyWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileModifyResponse, error)
+
+	RepositoriesFileFileModifyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileModifyResponse, error)
+
+	RepositoriesFileFileModifyWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileModifyResponse, error)
+
+	// RepositoriesFileFileMyPermissionsWithResponse request
+	RepositoriesFileFileMyPermissionsWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileMyPermissionsParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileMyPermissionsResponse, error)
+
+	// RepositoriesFileFileRemoveRoleWithBodyWithResponse request with any body
+	RepositoriesFileFileRemoveRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileRemoveRoleResponse, error)
+
+	RepositoriesFileFileRemoveRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileRemoveRoleResponse, error)
+
+	RepositoriesFileFileRemoveRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileRemoveRoleResponse, error)
+
+	// RepositoriesFileFileSetLabelWithBodyWithResponse request with any body
+	RepositoriesFileFileSetLabelWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSetLabelResponse, error)
+
+	RepositoriesFileFileSetLabelWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSetLabelResponse, error)
+
+	RepositoriesFileFileSetLabelWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSetLabelResponse, error)
+
+	// RepositoriesFileFileSyncWithBodyWithResponse request with any body
+	RepositoriesFileFileSyncWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSyncResponse, error)
+
+	RepositoriesFileFileSyncWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSyncResponse, error)
+
+	RepositoriesFileFileSyncWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSyncResponse, error)
+
+	// RepositoriesFileFileUnsetLabelWithBodyWithResponse request with any body
+	RepositoriesFileFileUnsetLabelWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUnsetLabelResponse, error)
+
+	RepositoriesFileFileUnsetLabelWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUnsetLabelResponse, error)
+
+	RepositoriesFileFileUnsetLabelWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUnsetLabelResponse, error)
+
+	// RepositoriesFileFileVersionsListWithResponse request
+	RepositoriesFileFileVersionsListWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, params *RepositoriesFileFileVersionsListParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsListResponse, error)
+
+	// RepositoriesFileFileVersionsDeleteWithResponse request
+	RepositoriesFileFileVersionsDeleteWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsDeleteResponse, error)
+
+	// RepositoriesFileFileVersionsReadWithResponse request
+	RepositoriesFileFileVersionsReadWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, params *RepositoriesFileFileVersionsReadParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsReadResponse, error)
+
+	// RepositoriesFileFileVersionsRepairWithBodyWithResponse request with any body
+	RepositoriesFileFileVersionsRepairWithBodyWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsRepairResponse, error)
+
+	RepositoriesFileFileVersionsRepairWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsRepairResponse, error)
+
+	RepositoriesFileFileVersionsRepairWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsRepairResponse, error)
+
 	// RepositoriesOstreeOstreeListWithResponse request
 	RepositoriesOstreeOstreeListWithResponse(ctx context.Context, pulpDomain string, params *RepositoriesOstreeOstreeListParams, reqEditors ...RequestEditorFn) (*RepositoriesOstreeOstreeListResponse, error)
 
@@ -13465,6 +17156,72 @@ func (r ArtifactsReadResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ArtifactsReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentFileFilesListResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedfileFileContentResponseList
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentFileFilesListResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentFileFilesListResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentFileFilesCreateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentFileFilesCreateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentFileFilesCreateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentFileFilesReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *FileFileContentResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentFileFilesReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentFileFilesReadResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14590,6 +18347,402 @@ func (r DomainsUpdateResponse) StatusCode() int {
 	return 0
 }
 
+type RepositoriesFileFileListResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedfileFileRepositoryResponseList
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileListResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileListResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileCreateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *FileFileRepositoryResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileCreateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileCreateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileDeleteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileDeleteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileDeleteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *FileFileRepositoryResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFilePartialUpdateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFilePartialUpdateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFilePartialUpdateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileUpdateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileUpdateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileUpdateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileAddRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *NestedRoleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileAddRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileAddRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileListRolesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObjectRolesResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileListRolesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileListRolesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileModifyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileModifyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileModifyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileMyPermissionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MyPermissionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileMyPermissionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileMyPermissionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileRemoveRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *NestedRoleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileRemoveRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileRemoveRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileSetLabelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *SetLabelResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileSetLabelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileSetLabelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileSyncResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileSyncResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileSyncResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileUnsetLabelResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *UnsetLabelResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileUnsetLabelResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileUnsetLabelResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileVersionsListResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedRepositoryVersionResponseList
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileVersionsListResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileVersionsListResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileVersionsDeleteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileVersionsDeleteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileVersionsDeleteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileVersionsReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RepositoryVersionResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileVersionsReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileVersionsReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepositoriesFileFileVersionsRepairResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *AsyncOperationResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RepositoriesFileFileVersionsRepairResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepositoriesFileFileVersionsRepairResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type RepositoriesOstreeOstreeListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -15182,6 +19335,41 @@ func (c *ClientWithResponses) ArtifactsReadWithResponse(ctx context.Context, pul
 		return nil, err
 	}
 	return ParseArtifactsReadResponse(rsp)
+}
+
+// ContentFileFilesListWithResponse request returning *ContentFileFilesListResponse
+func (c *ClientWithResponses) ContentFileFilesListWithResponse(ctx context.Context, pulpDomain string, params *ContentFileFilesListParams, reqEditors ...RequestEditorFn) (*ContentFileFilesListResponse, error) {
+	rsp, err := c.ContentFileFilesList(ctx, pulpDomain, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentFileFilesListResponse(rsp)
+}
+
+// ContentFileFilesCreateWithBodyWithResponse request with arbitrary body returning *ContentFileFilesCreateResponse
+func (c *ClientWithResponses) ContentFileFilesCreateWithBodyWithResponse(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentFileFilesCreateResponse, error) {
+	rsp, err := c.ContentFileFilesCreateWithBody(ctx, pulpDomain, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentFileFilesCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentFileFilesCreateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, body ContentFileFilesCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentFileFilesCreateResponse, error) {
+	rsp, err := c.ContentFileFilesCreateWithFormdataBody(ctx, pulpDomain, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentFileFilesCreateResponse(rsp)
+}
+
+// ContentFileFilesReadWithResponse request returning *ContentFileFilesReadResponse
+func (c *ClientWithResponses) ContentFileFilesReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentFileFilesReadParams, reqEditors ...RequestEditorFn) (*ContentFileFilesReadResponse, error) {
+	rsp, err := c.ContentFileFilesRead(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentFileFilesReadResponse(rsp)
 }
 
 // ContentOstreeContentListWithResponse request returning *ContentOstreeContentListResponse
@@ -16059,6 +20247,328 @@ func (c *ClientWithResponses) DomainsUpdateWithFormdataBodyWithResponse(ctx cont
 	return ParseDomainsUpdateResponse(rsp)
 }
 
+// RepositoriesFileFileListWithResponse request returning *RepositoriesFileFileListResponse
+func (c *ClientWithResponses) RepositoriesFileFileListWithResponse(ctx context.Context, pulpDomain string, params *RepositoriesFileFileListParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileListResponse, error) {
+	rsp, err := c.RepositoriesFileFileList(ctx, pulpDomain, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileListResponse(rsp)
+}
+
+// RepositoriesFileFileCreateWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileCreateResponse
+func (c *ClientWithResponses) RepositoriesFileFileCreateWithBodyWithResponse(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileCreateResponse, error) {
+	rsp, err := c.RepositoriesFileFileCreateWithBody(ctx, pulpDomain, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileCreateWithResponse(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileCreateResponse, error) {
+	rsp, err := c.RepositoriesFileFileCreate(ctx, pulpDomain, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileCreateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, body RepositoriesFileFileCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileCreateResponse, error) {
+	rsp, err := c.RepositoriesFileFileCreateWithFormdataBody(ctx, pulpDomain, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileCreateResponse(rsp)
+}
+
+// RepositoriesFileFileDeleteWithResponse request returning *RepositoriesFileFileDeleteResponse
+func (c *ClientWithResponses) RepositoriesFileFileDeleteWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RepositoriesFileFileDeleteResponse, error) {
+	rsp, err := c.RepositoriesFileFileDelete(ctx, pulpDomain, pulpId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileDeleteResponse(rsp)
+}
+
+// RepositoriesFileFileReadWithResponse request returning *RepositoriesFileFileReadResponse
+func (c *ClientWithResponses) RepositoriesFileFileReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileReadParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileReadResponse, error) {
+	rsp, err := c.RepositoriesFileFileRead(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileReadResponse(rsp)
+}
+
+// RepositoriesFileFilePartialUpdateWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFilePartialUpdateResponse
+func (c *ClientWithResponses) RepositoriesFileFilePartialUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFilePartialUpdateResponse, error) {
+	rsp, err := c.RepositoriesFileFilePartialUpdateWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFilePartialUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFilePartialUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFilePartialUpdateResponse, error) {
+	rsp, err := c.RepositoriesFileFilePartialUpdate(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFilePartialUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFilePartialUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFilePartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFilePartialUpdateResponse, error) {
+	rsp, err := c.RepositoriesFileFilePartialUpdateWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFilePartialUpdateResponse(rsp)
+}
+
+// RepositoriesFileFileUpdateWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileUpdateResponse
+func (c *ClientWithResponses) RepositoriesFileFileUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUpdateResponse, error) {
+	rsp, err := c.RepositoriesFileFileUpdateWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUpdateResponse, error) {
+	rsp, err := c.RepositoriesFileFileUpdate(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUpdateResponse, error) {
+	rsp, err := c.RepositoriesFileFileUpdateWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileUpdateResponse(rsp)
+}
+
+// RepositoriesFileFileAddRoleWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileAddRoleResponse
+func (c *ClientWithResponses) RepositoriesFileFileAddRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileAddRoleResponse, error) {
+	rsp, err := c.RepositoriesFileFileAddRoleWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileAddRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileAddRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileAddRoleResponse, error) {
+	rsp, err := c.RepositoriesFileFileAddRole(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileAddRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileAddRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileAddRoleResponse, error) {
+	rsp, err := c.RepositoriesFileFileAddRoleWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileAddRoleResponse(rsp)
+}
+
+// RepositoriesFileFileListRolesWithResponse request returning *RepositoriesFileFileListRolesResponse
+func (c *ClientWithResponses) RepositoriesFileFileListRolesWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileListRolesParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileListRolesResponse, error) {
+	rsp, err := c.RepositoriesFileFileListRoles(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileListRolesResponse(rsp)
+}
+
+// RepositoriesFileFileModifyWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileModifyResponse
+func (c *ClientWithResponses) RepositoriesFileFileModifyWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileModifyResponse, error) {
+	rsp, err := c.RepositoriesFileFileModifyWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileModifyResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileModifyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileModifyResponse, error) {
+	rsp, err := c.RepositoriesFileFileModify(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileModifyResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileModifyWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileModifyFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileModifyResponse, error) {
+	rsp, err := c.RepositoriesFileFileModifyWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileModifyResponse(rsp)
+}
+
+// RepositoriesFileFileMyPermissionsWithResponse request returning *RepositoriesFileFileMyPermissionsResponse
+func (c *ClientWithResponses) RepositoriesFileFileMyPermissionsWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *RepositoriesFileFileMyPermissionsParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileMyPermissionsResponse, error) {
+	rsp, err := c.RepositoriesFileFileMyPermissions(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileMyPermissionsResponse(rsp)
+}
+
+// RepositoriesFileFileRemoveRoleWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileRemoveRoleResponse
+func (c *ClientWithResponses) RepositoriesFileFileRemoveRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileRemoveRoleResponse, error) {
+	rsp, err := c.RepositoriesFileFileRemoveRoleWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileRemoveRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileRemoveRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileRemoveRoleResponse, error) {
+	rsp, err := c.RepositoriesFileFileRemoveRole(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileRemoveRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileRemoveRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileRemoveRoleResponse, error) {
+	rsp, err := c.RepositoriesFileFileRemoveRoleWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileRemoveRoleResponse(rsp)
+}
+
+// RepositoriesFileFileSetLabelWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileSetLabelResponse
+func (c *ClientWithResponses) RepositoriesFileFileSetLabelWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSetLabelResponse, error) {
+	rsp, err := c.RepositoriesFileFileSetLabelWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileSetLabelResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileSetLabelWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSetLabelResponse, error) {
+	rsp, err := c.RepositoriesFileFileSetLabel(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileSetLabelResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileSetLabelWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSetLabelResponse, error) {
+	rsp, err := c.RepositoriesFileFileSetLabelWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileSetLabelResponse(rsp)
+}
+
+// RepositoriesFileFileSyncWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileSyncResponse
+func (c *ClientWithResponses) RepositoriesFileFileSyncWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSyncResponse, error) {
+	rsp, err := c.RepositoriesFileFileSyncWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileSyncResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileSyncWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSyncResponse, error) {
+	rsp, err := c.RepositoriesFileFileSync(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileSyncResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileSyncWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileSyncFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileSyncResponse, error) {
+	rsp, err := c.RepositoriesFileFileSyncWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileSyncResponse(rsp)
+}
+
+// RepositoriesFileFileUnsetLabelWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileUnsetLabelResponse
+func (c *ClientWithResponses) RepositoriesFileFileUnsetLabelWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUnsetLabelResponse, error) {
+	rsp, err := c.RepositoriesFileFileUnsetLabelWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileUnsetLabelResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileUnsetLabelWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUnsetLabelResponse, error) {
+	rsp, err := c.RepositoriesFileFileUnsetLabel(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileUnsetLabelResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileUnsetLabelWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body RepositoriesFileFileUnsetLabelFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileUnsetLabelResponse, error) {
+	rsp, err := c.RepositoriesFileFileUnsetLabelWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileUnsetLabelResponse(rsp)
+}
+
+// RepositoriesFileFileVersionsListWithResponse request returning *RepositoriesFileFileVersionsListResponse
+func (c *ClientWithResponses) RepositoriesFileFileVersionsListWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, params *RepositoriesFileFileVersionsListParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsListResponse, error) {
+	rsp, err := c.RepositoriesFileFileVersionsList(ctx, pulpDomain, repositoryPk, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileVersionsListResponse(rsp)
+}
+
+// RepositoriesFileFileVersionsDeleteWithResponse request returning *RepositoriesFileFileVersionsDeleteResponse
+func (c *ClientWithResponses) RepositoriesFileFileVersionsDeleteWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsDeleteResponse, error) {
+	rsp, err := c.RepositoriesFileFileVersionsDelete(ctx, pulpDomain, repositoryPk, number, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileVersionsDeleteResponse(rsp)
+}
+
+// RepositoriesFileFileVersionsReadWithResponse request returning *RepositoriesFileFileVersionsReadResponse
+func (c *ClientWithResponses) RepositoriesFileFileVersionsReadWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, params *RepositoriesFileFileVersionsReadParams, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsReadResponse, error) {
+	rsp, err := c.RepositoriesFileFileVersionsRead(ctx, pulpDomain, repositoryPk, number, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileVersionsReadResponse(rsp)
+}
+
+// RepositoriesFileFileVersionsRepairWithBodyWithResponse request with arbitrary body returning *RepositoriesFileFileVersionsRepairResponse
+func (c *ClientWithResponses) RepositoriesFileFileVersionsRepairWithBodyWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsRepairResponse, error) {
+	rsp, err := c.RepositoriesFileFileVersionsRepairWithBody(ctx, pulpDomain, repositoryPk, number, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileVersionsRepairResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileVersionsRepairWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairJSONRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsRepairResponse, error) {
+	rsp, err := c.RepositoriesFileFileVersionsRepair(ctx, pulpDomain, repositoryPk, number, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileVersionsRepairResponse(rsp)
+}
+
+func (c *ClientWithResponses) RepositoriesFileFileVersionsRepairWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, repositoryPk openapi_types.UUID, number int64, body RepositoriesFileFileVersionsRepairFormdataRequestBody, reqEditors ...RequestEditorFn) (*RepositoriesFileFileVersionsRepairResponse, error) {
+	rsp, err := c.RepositoriesFileFileVersionsRepairWithFormdataBody(ctx, pulpDomain, repositoryPk, number, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepositoriesFileFileVersionsRepairResponse(rsp)
+}
+
 // RepositoriesOstreeOstreeListWithResponse request returning *RepositoriesOstreeOstreeListResponse
 func (c *ClientWithResponses) RepositoriesOstreeOstreeListWithResponse(ctx context.Context, pulpDomain string, params *RepositoriesOstreeOstreeListParams, reqEditors ...RequestEditorFn) (*RepositoriesOstreeOstreeListResponse, error) {
 	rsp, err := c.RepositoriesOstreeOstreeList(ctx, pulpDomain, params, reqEditors...)
@@ -16608,6 +21118,84 @@ func ParseArtifactsReadResponse(rsp *http.Response) (*ArtifactsReadResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ArtifactResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentFileFilesListResponse parses an HTTP response from a ContentFileFilesListWithResponse call
+func ParseContentFileFilesListResponse(rsp *http.Response) (*ContentFileFilesListResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentFileFilesListResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedfileFileContentResponseList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentFileFilesCreateResponse parses an HTTP response from a ContentFileFilesCreateWithResponse call
+func ParseContentFileFilesCreateResponse(rsp *http.Response) (*ContentFileFilesCreateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentFileFilesCreateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentFileFilesReadResponse parses an HTTP response from a ContentFileFilesReadWithResponse call
+func ParseContentFileFilesReadResponse(rsp *http.Response) (*ContentFileFilesReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentFileFilesReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FileFileContentResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -17897,6 +22485,474 @@ func ParseDomainsUpdateResponse(rsp *http.Response) (*DomainsUpdateResponse, err
 	}
 
 	response := &DomainsUpdateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileListResponse parses an HTTP response from a RepositoriesFileFileListWithResponse call
+func ParseRepositoriesFileFileListResponse(rsp *http.Response) (*RepositoriesFileFileListResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileListResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedfileFileRepositoryResponseList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileCreateResponse parses an HTTP response from a RepositoriesFileFileCreateWithResponse call
+func ParseRepositoriesFileFileCreateResponse(rsp *http.Response) (*RepositoriesFileFileCreateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileCreateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FileFileRepositoryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileDeleteResponse parses an HTTP response from a RepositoriesFileFileDeleteWithResponse call
+func ParseRepositoriesFileFileDeleteResponse(rsp *http.Response) (*RepositoriesFileFileDeleteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileDeleteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileReadResponse parses an HTTP response from a RepositoriesFileFileReadWithResponse call
+func ParseRepositoriesFileFileReadResponse(rsp *http.Response) (*RepositoriesFileFileReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FileFileRepositoryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFilePartialUpdateResponse parses an HTTP response from a RepositoriesFileFilePartialUpdateWithResponse call
+func ParseRepositoriesFileFilePartialUpdateResponse(rsp *http.Response) (*RepositoriesFileFilePartialUpdateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFilePartialUpdateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileUpdateResponse parses an HTTP response from a RepositoriesFileFileUpdateWithResponse call
+func ParseRepositoriesFileFileUpdateResponse(rsp *http.Response) (*RepositoriesFileFileUpdateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileUpdateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileAddRoleResponse parses an HTTP response from a RepositoriesFileFileAddRoleWithResponse call
+func ParseRepositoriesFileFileAddRoleResponse(rsp *http.Response) (*RepositoriesFileFileAddRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileAddRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest NestedRoleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileListRolesResponse parses an HTTP response from a RepositoriesFileFileListRolesWithResponse call
+func ParseRepositoriesFileFileListRolesResponse(rsp *http.Response) (*RepositoriesFileFileListRolesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileListRolesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObjectRolesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileModifyResponse parses an HTTP response from a RepositoriesFileFileModifyWithResponse call
+func ParseRepositoriesFileFileModifyResponse(rsp *http.Response) (*RepositoriesFileFileModifyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileModifyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileMyPermissionsResponse parses an HTTP response from a RepositoriesFileFileMyPermissionsWithResponse call
+func ParseRepositoriesFileFileMyPermissionsResponse(rsp *http.Response) (*RepositoriesFileFileMyPermissionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileMyPermissionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MyPermissionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileRemoveRoleResponse parses an HTTP response from a RepositoriesFileFileRemoveRoleWithResponse call
+func ParseRepositoriesFileFileRemoveRoleResponse(rsp *http.Response) (*RepositoriesFileFileRemoveRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileRemoveRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest NestedRoleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileSetLabelResponse parses an HTTP response from a RepositoriesFileFileSetLabelWithResponse call
+func ParseRepositoriesFileFileSetLabelResponse(rsp *http.Response) (*RepositoriesFileFileSetLabelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileSetLabelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SetLabelResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileSyncResponse parses an HTTP response from a RepositoriesFileFileSyncWithResponse call
+func ParseRepositoriesFileFileSyncResponse(rsp *http.Response) (*RepositoriesFileFileSyncResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileSyncResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileUnsetLabelResponse parses an HTTP response from a RepositoriesFileFileUnsetLabelWithResponse call
+func ParseRepositoriesFileFileUnsetLabelResponse(rsp *http.Response) (*RepositoriesFileFileUnsetLabelResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileUnsetLabelResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest UnsetLabelResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileVersionsListResponse parses an HTTP response from a RepositoriesFileFileVersionsListWithResponse call
+func ParseRepositoriesFileFileVersionsListResponse(rsp *http.Response) (*RepositoriesFileFileVersionsListResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileVersionsListResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedRepositoryVersionResponseList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileVersionsDeleteResponse parses an HTTP response from a RepositoriesFileFileVersionsDeleteWithResponse call
+func ParseRepositoriesFileFileVersionsDeleteResponse(rsp *http.Response) (*RepositoriesFileFileVersionsDeleteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileVersionsDeleteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AsyncOperationResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileVersionsReadResponse parses an HTTP response from a RepositoriesFileFileVersionsReadWithResponse call
+func ParseRepositoriesFileFileVersionsReadResponse(rsp *http.Response) (*RepositoriesFileFileVersionsReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileVersionsReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RepositoryVersionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepositoriesFileFileVersionsRepairResponse parses an HTTP response from a RepositoriesFileFileVersionsRepairWithResponse call
+func ParseRepositoriesFileFileVersionsRepairResponse(rsp *http.Response) (*RepositoriesFileFileVersionsRepairResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepositoriesFileFileVersionsRepairResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

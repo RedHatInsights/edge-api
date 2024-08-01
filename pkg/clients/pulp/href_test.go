@@ -48,3 +48,45 @@ func TestScanUUID(t *testing.T) {
 		}
 	})
 }
+
+func TestScanRepoFileVersion(t *testing.T) {
+
+	t.Run("scanRepoFileVersion", func(t *testing.T) {
+		var tests = []struct {
+			name     string
+			href     string
+			expected int64
+		}{
+			{
+				name:     "valid version",
+				href:     "/api/pulp/edge-integration-test-2/api/v3/repositories/file/file/01910e45-ceb3-7213-bed8-0727e76d0d12/versions/1/",
+				expected: 1,
+			},
+			{
+				name:     "valid version",
+				href:     "/api/pulp/edge-integration-test-2/api/v3/repositories/file/file/01910e45-ceb3-7213-bed8-0727e76d0d12/versions/2/",
+				expected: 2,
+			},
+			{
+				name:     "empty string",
+				href:     "",
+				expected: 0,
+			},
+			{
+				name:     "invalid version",
+				href:     "this is not a version",
+				expected: 0,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// linter G601 workaround
+				actual := ScanRepoFileVersion(ptr.To(tt.href))
+				if actual != tt.expected {
+					t.Errorf("scanRepoFileVersion(%s): expected %v, actual %v", tt.href, tt.expected, actual)
+				}
+			})
+		}
+	})
+}

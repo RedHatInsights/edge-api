@@ -24,10 +24,14 @@ func (ps *PulpService) DistributionsCreate(ctx context.Context, name, basePath, 
 		return nil, fmt.Errorf("unexpected response: %d, body: %s", resp.StatusCode(), string(resp.Body))
 	}
 
-	href, err := ps.WaitForTask(ctx, resp.JSON202.Task)
+	hrefs, err := ps.WaitForTask(ctx, resp.JSON202.Task)
 	if err != nil {
 		return nil, err
 	}
+	if len(hrefs) != 1 {
+		return nil, fmt.Errorf("unexpected number of created resources: %d", len(hrefs))
+	}
+	href := hrefs[0]
 
 	result, err := ps.DistributionsRead(ctx, ScanUUID(&href))
 	if err != nil {
