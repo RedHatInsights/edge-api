@@ -41,10 +41,14 @@ func (ps *PulpService) RepositoriesImport(ctx context.Context, id uuid.UUID, rep
 		return nil, fmt.Errorf("unexpected response: %d, body: %s", resp.StatusCode(), string(resp.Body))
 	}
 
-	href, err := ps.WaitForTask(ctx, resp.JSON202.Task)
+	hrefs, err := ps.WaitForTask(ctx, resp.JSON202.Task)
 	if err != nil {
 		return nil, err
 	}
+	if len(hrefs) != 1 {
+		return nil, fmt.Errorf("unexpected number of created resources: %d", len(hrefs))
+	}
+	href := hrefs[0]
 
 	result, err := ps.RepositoriesRead(ctx, ScanUUID(&href))
 	if err != nil {

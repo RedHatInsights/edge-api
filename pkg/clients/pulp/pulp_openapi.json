@@ -17,13 +17,14 @@
             "url": "https://pulp.plan.io/attachments/download/517478/pulp_logo_word_rectangle.svg"
         },
         "x-pulp-app-versions": {
-            "core": "3.54.1",
-            "gem": "0.5.1",
+            "core": "3.56.1",
+            "gem": "0.6.1",
             "ostree": "2.4.3",
-            "python": "3.12.0",
-            "rpm": "3.25.3",
-            "certguard": "3.54.1",
-            "file": "3.54.1"
+            "python": "3.12.1",
+            "rpm": "3.27.1",
+            "service": "0.1.0",
+            "certguard": "3.56.1",
+            "file": "3.56.1"
         },
         "x-pulp-domain-enabled": true
     },
@@ -9261,7 +9262,7 @@
             },
             "post": {
                 "operationId": "content_rpm_packages_create",
-                "description": "Trigger an asynchronous task to create content,optionally create new repository version.",
+                "description": "Trigger an asynchronous task to create an RPM package,optionally create new repository version.",
                 "summary": "Create a package",
                 "parameters": [
                     {
@@ -21416,7 +21417,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -21506,7 +21508,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -21578,7 +21581,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -21660,7 +21664,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -22273,7 +22278,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -22363,7 +22369,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -22435,7 +22442,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -22517,7 +22525,8 @@
                         "in": "path",
                         "name": "exporter_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -23128,7 +23137,8 @@
                         "in": "path",
                         "name": "group_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     },
@@ -23316,7 +23326,8 @@
                         "in": "path",
                         "name": "group_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     },
@@ -23388,7 +23399,8 @@
                         "in": "path",
                         "name": "group_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     },
@@ -23470,7 +23482,8 @@
                         "in": "path",
                         "name": "group_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     },
@@ -24591,7 +24604,8 @@
                         "in": "path",
                         "name": "importer_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -24681,7 +24695,8 @@
                         "in": "path",
                         "name": "importer_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -24753,7 +24768,8 @@
                         "in": "path",
                         "name": "importer_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -24835,7 +24851,8 @@
                         "in": "path",
                         "name": "importer_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -37478,7 +37495,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -37561,7 +37579,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -37642,7 +37661,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -37702,7 +37722,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -39233,7 +39254,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -39316,7 +39338,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -39397,7 +39420,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -39457,7 +39481,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -41136,7 +41161,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -41219,7 +41245,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -41300,7 +41327,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -41360,7 +41388,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -42891,7 +42920,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -42974,7 +43004,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -43055,7 +43086,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -43115,7 +43147,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -44709,7 +44742,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -44792,7 +44826,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     },
@@ -44873,7 +44908,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -44933,7 +44969,8 @@
                         "in": "path",
                         "name": "repository_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "uuid"
                         },
                         "required": true
                     }
@@ -45974,6 +46011,69 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/AsyncOperationResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/pulp/{pulp_domain}/api/v3/rpm/prune/": {
+            "post": {
+                "operationId": "rpm_prune_prune_packages",
+                "description": "Trigger an asynchronous old-Package-prune operation.",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "pulp_domain",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true,
+                        "x-isDomain": true
+                    }
+                ],
+                "tags": [
+                    "Rpm: Prune"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PrunePackages"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PrunePackages"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PrunePackages"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {
+                        "basicAuth": []
+                    },
+                    {
+                        "cookieAuth": []
+                    },
+                    {
+                        "json_header_remote_authentication": []
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskGroupOperationResponse"
                                 }
                             }
                         },
@@ -47221,18 +47321,6 @@
                         "description": "Multiple values may be separated by commas.",
                         "explode": false,
                         "style": "form"
-                    },
-                    {
-                        "in": "query",
-                        "name": "reserved_resources_record",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "nullable": true
-                        },
-                        "description": "Deprecated, will be removed in pulpcore 3.55. Use reserved_resources instead."
                     },
                     {
                         "in": "query",
@@ -50419,7 +50507,8 @@
                         "in": "path",
                         "name": "user_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     },
@@ -50491,7 +50580,8 @@
                         "in": "path",
                         "name": "user_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     }
@@ -50573,7 +50663,8 @@
                         "in": "path",
                         "name": "user_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     },
@@ -50655,7 +50746,8 @@
                         "in": "path",
                         "name": "user_pk",
                         "schema": {
-                            "type": "string"
+                            "type": "integer",
+                            "format": "int64"
                         },
                         "required": true
                     }
@@ -52051,15 +52143,16 @@
                 "type": "object",
                 "description": "A serializer for ArtifactDistribution.",
                 "properties": {
-                    "pulp_created": {
+                    "pulp_last_updated": {
                         "type": "string",
                         "format": "date-time",
                         "readOnly": true,
-                        "description": "Timestamp of creation."
+                        "description": "Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same."
                     },
-                    "base_path": {
+                    "base_url": {
                         "type": "string",
-                        "description": "The base (relative) path component of the published url. Avoid paths that                     overlap with other distribution base paths (e.g. \"foo\" and \"foo/bar\")"
+                        "readOnly": true,
+                        "description": "The URL for accessing the publication as defined by this distribution."
                     },
                     "content_guard": {
                         "type": "string",
@@ -52067,16 +52160,29 @@
                         "nullable": true,
                         "description": "An optional content-guard."
                     },
-                    "pulp_last_updated": {
+                    "name": {
+                        "type": "string",
+                        "description": "A unique name. Ex, `rawhide` and `stable`."
+                    },
+                    "base_path": {
+                        "type": "string",
+                        "description": "The base (relative) path component of the published url. Avoid paths that                     overlap with other distribution base paths (e.g. \"foo\" and \"foo/bar\")"
+                    },
+                    "pulp_created": {
                         "type": "string",
                         "format": "date-time",
                         "readOnly": true,
-                        "description": "Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same."
+                        "description": "Timestamp of creation."
                     },
                     "hidden": {
                         "type": "boolean",
                         "default": false,
                         "description": "Whether this distribution should be shown in the content app."
+                    },
+                    "pulp_href": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "pulp_labels": {
                         "type": "object",
@@ -52084,20 +52190,6 @@
                             "type": "string",
                             "nullable": true
                         }
-                    },
-                    "base_url": {
-                        "type": "string",
-                        "readOnly": true,
-                        "description": "The URL for accessing the publication as defined by this distribution."
-                    },
-                    "pulp_href": {
-                        "type": "string",
-                        "format": "uri",
-                        "readOnly": true
-                    },
-                    "name": {
-                        "type": "string",
-                        "description": "A unique name. Ex, `rawhide` and `stable`."
                     }
                 },
                 "required": [
@@ -52470,7 +52562,6 @@
                 "description": "A serializer for Content Copy API.",
                 "properties": {
                     "config": {
-                        "type": "object",
                         "description": "A JSON document describing sources, destinations, and content to be copied"
                     },
                     "dependency_solving": {
@@ -52770,7 +52861,6 @@
                         "description": "Resources that were exported."
                     },
                     "params": {
-                        "type": "object",
                         "readOnly": true,
                         "description": "Any additional parameters that were used to create the export."
                     }
@@ -53181,7 +53271,6 @@
                         "description": "A URI of the Task that ran the Import."
                     },
                     "params": {
-                        "type": "object",
                         "description": "Any parameters that were used to create the import."
                     }
                 },
@@ -53458,16 +53547,12 @@
                         "description": "Cache value from last PyPI sync"
                     },
                     "info": {
-                        "type": "object",
                         "description": "Core metadata of the package"
                     },
                     "releases": {
-                        "type": "object",
                         "description": "List of all the releases of the package"
                     },
-                    "urls": {
-                        "type": "object"
-                    }
+                    "urls": {}
                 },
                 "required": [
                     "info",
@@ -56571,7 +56656,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -56815,7 +56900,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -57061,7 +57146,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy462Enum"
+                                "$ref": "#/components/schemas/PolicyBfeEnum"
                             }
                         ],
                         "default": "immediate",
@@ -57329,7 +57414,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "on_demand",
@@ -57635,7 +57720,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -57736,6 +57821,18 @@
                         "nullable": true,
                         "description": "A reference to an associated signing service."
                     },
+                    "package_signing_service": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "description": "A reference to an associated package signing service."
+                    },
+                    "package_signing_fingerprint": {
+                        "type": "string",
+                        "default": "",
+                        "description": "The pubkey V4 fingerprint (160 bits) to be passed to the package signing service.The signing service will use that on signing operations related to this repository.",
+                        "maxLength": 40
+                    },
                     "retain_package_versions": {
                         "type": "integer",
                         "format": "int64",
@@ -57786,7 +57883,6 @@
                         "minimum": 0
                     },
                     "repo_config": {
-                        "type": "object",
                         "description": "A JSON document describing config.repo file"
                     },
                     "compression_type": {
@@ -57892,7 +57988,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -57947,15 +58043,7 @@
                     }
                 }
             },
-            "Policy462Enum": {
-                "enum": [
-                    "immediate",
-                    "on_demand"
-                ],
-                "type": "string",
-                "description": "* `immediate` - immediate\n* `on_demand` - on_demand"
-            },
-            "Policy762Enum": {
+            "Policy692Enum": {
                 "enum": [
                     "immediate",
                     "on_demand",
@@ -57963,6 +58051,14 @@
                 ],
                 "type": "string",
                 "description": "* `immediate` - When syncing, download all metadata and content now.\n* `on_demand` - When syncing, download metadata, but do not download content now. Instead, download content as clients request it, and save it in Pulp to be served for future client requests.\n* `streamed` - When syncing, download metadata, but do not download content now. Instead,download content as clients request it, but never save it in Pulp. This causes future requests for that same content to have to be downloaded again."
+            },
+            "PolicyBfeEnum": {
+                "enum": [
+                    "immediate",
+                    "on_demand"
+                ],
+                "type": "string",
+                "description": "* `immediate` - immediate\n* `on_demand` - on_demand"
             },
             "ProgressReportResponse": {
                 "type": "object",
@@ -58002,6 +58098,35 @@
                         "description": "The suffix to be shown with the progress report."
                     }
                 }
+            },
+            "PrunePackages": {
+                "type": "object",
+                "description": "Serializer for prune-old-Packages operation.",
+                "properties": {
+                    "repo_hrefs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "minLength": 1
+                        },
+                        "description": "Will prune old packages from the specified list of repos. Use ['*'] to specify all repos. Will prune based on the specified repositories' latest_versions."
+                    },
+                    "keep_days": {
+                        "type": "integer",
+                        "format": "int64",
+                        "default": 14,
+                        "description": "Prune packages introduced *prior-to* this many days ago. Default is 14. A value of 0 implies 'keep latest package only.'",
+                        "minimum": 0
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Determine what would-be-pruned and log the list of packages. Intended as a debugging aid."
+                    }
+                },
+                "required": [
+                    "repo_hrefs"
+                ]
             },
             "PublicationResponse": {
                 "type": "object",
@@ -58122,17 +58247,14 @@
                         "description": "Resources that were exported."
                     },
                     "params": {
-                        "type": "object",
                         "readOnly": true,
                         "description": "Any additional parameters that were used to create the export."
                     },
                     "output_file_info": {
-                        "type": "object",
                         "readOnly": true,
                         "description": "Dictionary of filename: sha256hash entries for export-output-file(s)"
                     },
                     "toc_info": {
-                        "type": "object",
                         "readOnly": true,
                         "description": "Filename and sha256-checksum of table-of-contents for this export"
                     }
@@ -58358,7 +58480,7 @@
                     "finished_before": {
                         "type": "string",
                         "format": "date-time",
-                        "default": "2024-06-11",
+                        "default": "2024-07-01",
                         "description": "Purge tasks completed earlier than this timestamp. Format '%Y-%m-%d[T%H:%M:%S]'"
                     },
                     "states": {
@@ -58391,7 +58513,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "on_demand",
@@ -59345,7 +59467,7 @@
                     },
                     "error": {
                         "type": "object",
-                        "additionalProperties": true,
+                        "additionalProperties": {},
                         "readOnly": true,
                         "description": "A JSON Object of a fatal error encountered during the execution of this task."
                     },
@@ -60428,6 +60550,12 @@
                         "format": "uri",
                         "writeOnly": true,
                         "description": "An uncommitted upload that may be turned into the content unit."
+                    },
+                    "file_url": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1,
+                        "description": "A url that Pulp can download and turn into the content unit."
                     }
                 },
                 "required": [
@@ -60782,7 +60910,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -60906,7 +61034,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -61478,7 +61606,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -61622,7 +61750,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -62287,7 +62415,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy462Enum"
+                                "$ref": "#/components/schemas/PolicyBfeEnum"
                             }
                         ],
                         "default": "immediate",
@@ -62438,7 +62566,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy462Enum"
+                                "$ref": "#/components/schemas/PolicyBfeEnum"
                             }
                         ],
                         "default": "immediate",
@@ -62859,6 +62987,12 @@
                         "writeOnly": true,
                         "description": "An uncommitted upload that may be turned into the content unit."
                     },
+                    "file_url": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1,
+                        "description": "A url that Pulp can download and turn into the content unit."
+                    },
                     "sha256": {
                         "type": "string",
                         "minLength": 1,
@@ -62918,7 +63052,6 @@
                         "description": "A browsable URL for the project and a label for it, separated by a comma."
                     },
                     "project_urls": {
-                        "type": "object",
                         "description": "A dictionary of labels and URLs for the project."
                     },
                     "platform": {
@@ -62930,23 +63063,18 @@
                         "description": "Field to specify the OS and CPU for which the binary package was compiled. "
                     },
                     "requires_dist": {
-                        "type": "object",
                         "description": "A JSON list containing names of some other distutils project required by this distribution."
                     },
                     "provides_dist": {
-                        "type": "object",
                         "description": "A JSON list containing names of a Distutils project which is contained within this distribution."
                     },
                     "obsoletes_dist": {
-                        "type": "object",
                         "description": "A JSON list containing names of a distutils project's distribution which this distribution renders obsolete, meaning that the two projects should not be installed at the same time."
                     },
                     "requires_external": {
-                        "type": "object",
                         "description": "A JSON list containing some dependency in the system that the distribution is to be used."
                     },
                     "classifiers": {
-                        "type": "object",
                         "description": "A JSON list containing classification values for a Python package."
                     }
                 },
@@ -63063,7 +63191,6 @@
                         "description": "A browsable URL for the project and a label for it, separated by a comma."
                     },
                     "project_urls": {
-                        "type": "object",
                         "description": "A dictionary of labels and URLs for the project."
                     },
                     "platform": {
@@ -63075,23 +63202,18 @@
                         "description": "Field to specify the OS and CPU for which the binary package was compiled. "
                     },
                     "requires_dist": {
-                        "type": "object",
                         "description": "A JSON list containing names of some other distutils project required by this distribution."
                     },
                     "provides_dist": {
-                        "type": "object",
                         "description": "A JSON list containing names of a Distutils project which is contained within this distribution."
                     },
                     "obsoletes_dist": {
-                        "type": "object",
                         "description": "A JSON list containing names of a distutils project's distribution which this distribution renders obsolete, meaning that the two projects should not be installed at the same time."
                     },
                     "requires_external": {
-                        "type": "object",
                         "description": "A JSON list containing some dependency in the system that the distribution is to be used."
                     },
                     "classifiers": {
-                        "type": "object",
                         "description": "A JSON list containing classification values for a Python package."
                     }
                 }
@@ -63246,7 +63368,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "on_demand",
@@ -63410,7 +63532,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "on_demand",
@@ -63797,12 +63919,10 @@
                         "description": "Modulemd architecture."
                     },
                     "artifacts": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Modulemd artifacts."
                     },
                     "dependencies": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Modulemd dependencies."
                     },
@@ -63822,7 +63942,6 @@
                         "description": "Modulemd snippet"
                     },
                     "profiles": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Modulemd profiles."
                     },
@@ -63866,7 +63985,6 @@
                         "description": "Modulemd default stream."
                     },
                     "profiles": {
-                        "type": "object",
                         "description": "Default profiles for modulemd streams."
                     },
                     "snippet": {
@@ -63913,7 +64031,6 @@
                         "description": "Modulemd default stream."
                     },
                     "profiles": {
-                        "type": "object",
                         "description": "Default profiles for modulemd streams."
                     }
                 },
@@ -64124,12 +64241,10 @@
                         "description": "Modulemd architecture."
                     },
                     "artifacts": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Modulemd artifacts."
                     },
                     "dependencies": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Modulemd dependencies."
                     },
@@ -64143,7 +64258,6 @@
                         "description": "Modulemd artifacts' packages."
                     },
                     "profiles": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Modulemd profiles."
                     },
@@ -64196,6 +64310,12 @@
                         "format": "uri",
                         "writeOnly": true,
                         "description": "An uncommitted upload that may be turned into the content unit."
+                    },
+                    "file_url": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1,
+                        "description": "A url that Pulp can download and turn into the content unit."
                     }
                 }
             },
@@ -64239,17 +64359,14 @@
                         "description": "Category display order."
                     },
                     "group_ids": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Category group list."
                     },
                     "desc_by_lang": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Category description by language."
                     },
                     "name_by_lang": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Category name by language."
                     },
@@ -64309,22 +64426,18 @@
                         "description": "Environment display order."
                     },
                     "group_ids": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Environment group list."
                     },
                     "option_ids": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Environment option ids"
                     },
                     "desc_by_lang": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Environment description by language."
                     },
                     "name_by_lang": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Environment name by language."
                     },
@@ -64393,7 +64506,6 @@
                         "description": "PackageGroup description."
                     },
                     "packages": {
-                        "type": "object",
                         "nullable": true,
                         "description": "PackageGroup package list."
                     },
@@ -64402,12 +64514,10 @@
                         "description": "PackageGroup biarch only."
                     },
                     "desc_by_lang": {
-                        "type": "object",
                         "nullable": true,
                         "description": "PackageGroup description by language."
                     },
                     "name_by_lang": {
-                        "type": "object",
                         "nullable": true,
                         "description": "PackageGroup name by language."
                     },
@@ -64449,7 +64559,6 @@
                         "description": "Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same."
                     },
                     "matches": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Langpacks matches."
                     },
@@ -64571,61 +64680,51 @@
                         "description": "URL with more information about the packaged software"
                     },
                     "changelogs": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Changelogs that package contains"
                     },
                     "files": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Files that package contains"
                     },
                     "requires": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package requires"
                     },
                     "provides": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package provides"
                     },
                     "conflicts": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package conflicts"
                     },
                     "obsoletes": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package obsoletes"
                     },
                     "suggests": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package suggests"
                     },
                     "enhances": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package enhances"
                     },
                     "recommends": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package recommends"
                     },
                     "supplements": {
-                        "type": "object",
                         "readOnly": true,
                         "default": "[]",
                         "description": "Capabilities the package supplements"
@@ -65066,7 +65165,6 @@
                         "minimum": 0
                     },
                     "repo_config": {
-                        "type": "object",
                         "description": "A JSON document describing config.repo file"
                     },
                     "compression_type": {
@@ -65156,7 +65254,6 @@
                         "description": "REMOVED: An option specifying whether Pulp should generate SQLite metadata. Not operation since pulp_rpm 3.25.0 release"
                     },
                     "repo_config": {
-                        "type": "object",
                         "description": "A JSON document describing config.repo file"
                     },
                     "compression_type": {
@@ -65263,7 +65360,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -65393,7 +65490,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -65517,6 +65614,18 @@
                         "nullable": true,
                         "description": "A reference to an associated signing service."
                     },
+                    "package_signing_service": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "description": "A reference to an associated package signing service."
+                    },
+                    "package_signing_fingerprint": {
+                        "type": "string",
+                        "default": "",
+                        "description": "The pubkey V4 fingerprint (160 bits) to be passed to the package signing service.The signing service will use that on signing operations related to this repository.",
+                        "maxLength": 40
+                    },
                     "retain_package_versions": {
                         "type": "integer",
                         "format": "int64",
@@ -65567,7 +65676,6 @@
                         "minimum": 0
                     },
                     "repo_config": {
-                        "type": "object",
                         "description": "A JSON document describing config.repo file"
                     },
                     "compression_type": {
@@ -65655,6 +65763,18 @@
                         "nullable": true,
                         "description": "A reference to an associated signing service."
                     },
+                    "package_signing_service": {
+                        "type": "string",
+                        "format": "uri",
+                        "nullable": true,
+                        "description": "A reference to an associated package signing service."
+                    },
+                    "package_signing_fingerprint": {
+                        "type": "string",
+                        "default": "",
+                        "description": "The pubkey V4 fingerprint (160 bits) to be passed to the package signing service.The signing service will use that on signing operations related to this repository.",
+                        "maxLength": 40
+                    },
                     "retain_package_versions": {
                         "type": "integer",
                         "format": "int64",
@@ -65711,7 +65831,6 @@
                         "description": "REMOVED: An option specifying whether Pulp should generate SQLite metadata. Not operation since pulp_rpm 3.25.0 release"
                     },
                     "repo_config": {
-                        "type": "object",
                         "description": "A JSON document describing config.repo file"
                     },
                     "compression_type": {
@@ -65820,7 +65939,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -65952,7 +66071,7 @@
                     "policy": {
                         "allOf": [
                             {
-                                "$ref": "#/components/schemas/Policy762Enum"
+                                "$ref": "#/components/schemas/Policy692Enum"
                             }
                         ],
                         "default": "immediate",
@@ -66045,7 +66164,6 @@
                         "description": "Collection short name."
                     },
                     "module": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Collection modular NSVCA."
                     }
@@ -66071,7 +66189,6 @@
                         "description": "Collection short name."
                     },
                     "module": {
-                        "type": "object",
                         "nullable": true,
                         "description": "Collection modular NSVCA."
                     },
@@ -66111,6 +66228,12 @@
                         "format": "uri",
                         "writeOnly": true,
                         "description": "An uncommitted upload that may be turned into the content unit."
+                    },
+                    "file_url": {
+                        "type": "string",
+                        "writeOnly": true,
+                        "minLength": 1,
+                        "description": "A url that Pulp can download and turn into the content unit."
                     }
                 }
             },
