@@ -66,7 +66,7 @@ type Package struct {
 
 // InstalledPackage represents installed packages a image has
 type InstalledPackage struct {
-	Model
+	ModelWithoutTimestamps
 	Name      string   `json:"name"`
 	Arch      string   `json:"arch"`
 	Release   string   `json:"release"`
