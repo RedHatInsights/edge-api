@@ -3,6 +3,7 @@ package cleanuporphancommits
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/redhatinsights/edge-api/cmd/cleanup/storage"
 	"github.com/redhatinsights/edge-api/config"
@@ -211,28 +212,36 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 	}
 
 	// delete orphan installed packages
-	// delete from installed_packages where id not in (select installed_package_id from commit_installed_packages)
-	var orphans []OrphanedInstalledPackageID
-	subQuery := gormDB.Table("commit_installed_packages").Select("installed_package_id")
-	result := gormDB.Table("installed_packages").Where("id NOT IN (?)", subQuery).FindInBatches(&orphans, 1000, func(tx *gorm.DB, batch int) error {
-		log.WithField("batch", batch).Info("deleting orphan installed packages")
-		ids := make([]uint, tx.RowsAffected)
-		for i, orphan := range orphans {
-			ids[i] = orphan.ID
+	batchSize := 30000
+	var total int64
+	keepGoing := true
+	totalStartTime := time.Now()
+	for keepGoing {
+		startTime := time.Now()
+		log.WithField("batch_size", batchSize).Info("deleting one batch of orphan installed packages")
+		tx := gormDB.Unscoped().Exec(`
+			delete from installed_packages
+			where installed_packages.id in (
+				select ip.id from installed_packages ip
+				full join commit_installed_packages cip on ip.id = cip.installed_package_id
+				where cip.commit_id is null limit ?
+			);
+		`, batchSize)
+		if tx.Error != nil {
+			log.WithField("batch_size", batchSize).
+				WithField("error", tx.Error.Error()).Error("error while deleting orphan installed packages")
+			return tx.Error
 		}
-		deleteRes := tx.Unscoped().Delete(&models.InstalledPackage{}, ids)
-		if deleteRes.Error != nil {
-			log.WithField("error", deleteRes.Error.Error()).Error("error occurred while deleting orphan installed packages")
-			return deleteRes.Error
+		if tx.RowsAffected <= 0 {
+			keepGoing = false
 		}
-		log.WithField("batch", batch).WithField("deleted", deleteRes.RowsAffected).Info("orphan installed packages deleted successfully")
-		return nil
-	})
-	if result.Error != nil {
-		log.WithField("error", result.Error.Error()).Error("error occurred while deleting orphan installed packages")
-		return result.Error
+		total += tx.RowsAffected
+		log.WithField("batch_size", batchSize).
+			Infof("Deleted %d orphan installed packages, records per hour: %02f", tx.RowsAffected,
+				float64(tx.RowsAffected)/time.Since(startTime).Hours())
 	}
 
-	log.WithField("installed_packages_deleted", result.RowsAffected).Info("orphan installed packages deleted successfully")
+	log.WithField("installed_packages_deleted", total).Infof("orphan installed packages deleted successfully: %d, records per hour: %02f",
+		total, float64(total)/time.Since(totalStartTime).Hours())
 	return nil
 }
