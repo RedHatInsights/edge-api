@@ -691,9 +691,9 @@ func (c *Client) ValidatePackages(pkgs []string) (map[string]*models.InstalledPa
 	var result []models.InstalledPackage
 	setOfPackages := make(map[string]*models.InstalledPackage)
 	if err := db.DB.Model(&models.InstalledPackage{}).
-		Select("DISTINCT Name, Arch, Release, Sigmd5, Signature, Max(id) ID").
+		Select("DISTINCT Name, Arch, Release, Sigmd5, Signature, created_at, Max(id) ID").
 		Where("(name || '-' || release || '-' ||  version) in (?)", pkgs).
-		Group("Name, Arch, Release, Sigmd5, Signature").Order("ID").
+		Group("Name, Arch, Release, Sigmd5, Signature, Created_at").Order("created_at DESC").
 		Find(&result); err.Error != nil {
 		c.log.WithField("error", err.Error)
 		return nil, err.Error
