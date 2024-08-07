@@ -27,6 +27,7 @@ var BuildCommand = exec.Command
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
+	StoreRepo(r *models.Repo) (*models.Repo, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 	CommitTarDownload(c *models.Commit, dest string) (string, error)
 	CommitTarExtract(c *models.Commit, tarFileName string, dest string) error
@@ -362,9 +363,17 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	return update, nil
 }
 
+// StoreRepo requests Pulp to create/update an ostree repo from an IB commit
+func (rb *RepoBuilder) StoreRepo(repo *models.Repo) (*models.Repo, error) {
+	// FIXME: add the Pulp repo create here
+	// 	this allows both to happen until code that updates the DB is added
+
+	return rb.ImportRepo(repo)
+}
+
 // ImportRepo (unpack and upload) a single repo
 func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
-
+	// FIXME: delete after Pulp Store Repo is stable
 	var cmt models.Commit
 	cmtDB := db.DB.Where("repo_id = ?", r.ID).First(&cmt)
 	if cmtDB.Error != nil {
