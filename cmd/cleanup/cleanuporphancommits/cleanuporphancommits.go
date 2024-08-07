@@ -212,7 +212,7 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 	}
 
 	// delete orphan installed packages
-	batchSize := 1000
+	batchSize := config.Get().CleanupBatchSize
 	var total int64
 	keepGoing := true
 	totalStartTime := time.Now()

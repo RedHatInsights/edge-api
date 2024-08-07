@@ -91,6 +91,7 @@ type EdgeConfig struct {
 	PulpS3Region               string                    `json:"pulp_s3_region,omitempty"`
 	PulpS3SecretKey            string                    `json:"pulp_s3_secret_key,omitempty"`
 	PulpS3AccessKey            string                    `json:"pulp_s3_access_key,omitempty"`
+	CleanupBatchSize           int                       `json:"cleanup_batch_size,omitempty"`
 }
 
 type dbConfig struct {
@@ -188,6 +189,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("PulpS3Region", "DummyRegion")
 	options.SetDefault("PulpS3SecretKey", "")
 	options.SetDefault("PulpS3AccessKey", "")
+	options.SetDefault("CleanupBatchSize", "500")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -297,6 +299,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		PulpS3Region:               options.GetString("PulpS3Region"),
 		PulpS3SecretKey:            options.GetString("PulpS3SecretKey"),
 		PulpS3AccessKey:            options.GetString("PulpS3AccessKey"),
+		CleanupBatchSize:           options.GetInt("CleanupBatchSize"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)

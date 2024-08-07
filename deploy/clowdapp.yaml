@@ -216,6 +216,7 @@ objects:
         schedule: ${CLEANUP_SCHEDULE}
         restartPolicy: Never
         concurrencyPolicy: Forbid
+        backoffLimit: 1
         suspend: ${{CLEANUP_SUSPEND}}
         activeDeadlineSeconds: 259200
         podSpec:
@@ -225,6 +226,8 @@ objects:
           env:
             - name: CLOWDER_ENABLED
               value: ${CLOWDER_ENABLED}
+            - name: CLEANUPBATCHSIZE
+              value: ${CLEANUPBATCHSIZE}
             - name: ENABLE_CLOUDWATCH_LOGGING
               value: ${ENABLE_CLOUDWATCH_LOGGING}
             - name: AUTH
@@ -468,6 +471,10 @@ parameters:
   name: CLEANUP_SUSPEND
   required: false
   value: "false"
+- description: Batch size of package deletion.
+  name: CLEANUPBATCHSIZE
+  required: false
+  value: "500"
 - description: RBAC service base URL
   name: RBAC_BASE_URL
   required: false
