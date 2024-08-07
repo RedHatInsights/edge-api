@@ -878,14 +878,20 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	}
 	s.log.Debug("OSTree repo was saved to commit")
 
-	repo, err := s.RepoBuilder.ImportRepo(repo)
+	var repository *models.Repo
+	var err error
+	if feature.PulpIntegration.IsEnabled() {
+		repository, err = s.RepoBuilder.StoreRepo(repo)
+	} else {
+		repository, err = s.RepoBuilder.ImportRepo(repo)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	s.log.Info("OSTree repo is ready")
+	s.log.WithField("url", repository.URL).Info("OSTree repo is ready")
 
-	return repo, nil
+	return repository, nil
 }
 
 // SetErrorStatusOnImage is a helper function that sets the error status on images
