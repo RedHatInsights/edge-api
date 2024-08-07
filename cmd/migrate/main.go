@@ -5,16 +5,15 @@ package main
 import (
 	"os"
 
+	"github.com/redhatinsights/edge-api/cmd/migrate/manual"
+	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-
-	"github.com/redhatinsights/edge-api/config"
-
 	log "github.com/sirupsen/logrus"
 )
 
-func handlePanic(errorOccurred *bool) {
+func handlePanic() {
 	if err := recover(); err != nil {
 		log.Errorf("Database automigrate failure: %s", err)
 		l.FlushLogger()
@@ -30,74 +29,24 @@ func main() {
 		l.LogErrorAndPanic("error when getting config values", err)
 	}
 	log.WithFields(configValues).Info("Configuration Values:")
-	log.Info("Migration started ...")
 	db.InitDB()
-
-	/*
-		// FIXME: this can create issues when only one out of many replicas evicts
-		// If there any image builds in progress, in the current architecture, we need to set them as errors because this is a brand new deployment
-		var images []models.Image
-		db.DB.Where(&models.Image{Status: models.ImageStatusBuilding}).Find(&images)
-		for _, image := range images {
-			log.WithField("imageID", image.ID).Debug("Found image with building status")
-			image.Status = models.ImageStatusError
-			if image.Commit != nil {
-				image.Commit.Status = models.ImageStatusError
-				if image.Commit.Repo != nil {
-					image.Commit.Repo.Status = models.RepoStatusError
-					db.DB.Save(image.Commit.Repo)
-				}
-				db.DB.Save(image.Commit)
-			}
-			if image.Installer != nil {
-				image.Installer.Status = models.ImageStatusError
-				db.DB.Save(image.Installer)
-			}
-			db.DB.Save(image)
-		}
-
-		// FIXME: this runs into an issue when only one of many pods is evicted and restarts...
-		// If there any updates in progress, in the current architecture, we need to set them as errors because this is a brand new deployment
-		var updates []models.UpdateTransaction
-		db.DB.Where(&models.UpdateTransaction{Status: models.UpdateStatusBuilding}).Or(&models.UpdateTransaction{Status: models.UpdateStatusCreated}).Find(&updates)
-		for _, update := range updates {
-			log.WithField("updateID", update.ID).Debug("Found update with building status")
-			update.Status = models.UpdateStatusError
-			if update.Repo != nil {
-				update.Repo.Status = models.RepoStatusError
-				db.DB.Save(update.Repo)
-			}
-			db.DB.Save(update)
-		}
-	*/
-	// Automigration
-	errorOccurred := false
-	defer handlePanic(&errorOccurred)
+	defer handlePanic()
 
 	var realDbName string
 	if result := db.DB.Raw("SELECT current_database()").Scan(&realDbName); result.Error == nil && realDbName == "postgres" {
 		log.Warning("Migration attempted on 'postgres' database")
 	}
 
-	// Delete indexes first, before models AutoMigrate
-	indexesToDelete := []struct {
-		model     interface{}
-		label     string
-		indexName string
-	}{
-		{model: &models.ThirdPartyRepo{}, label: "ThirdPartyRepo", indexName: "idx_third_party_repos_name"},
-	}
-	for _, indexToDelete := range indexesToDelete {
-		if db.DB.Migrator().HasIndex(indexToDelete.model, indexToDelete.indexName) {
-			log.Debugf(`Model index %s "%s" exists deleting ...`, indexToDelete.label, indexToDelete.indexName)
-			if err := db.DB.Migrator().DropIndex(indexToDelete.model, indexToDelete.indexName); err != nil {
-				log.Warningf(`Model index %s "%s" deletion failure %s`, indexToDelete.label, indexToDelete.indexName, err)
-				errorOccurred = true
-			}
-		} else {
-			log.Debugf(`Model index %s "%s"  does not exist`, indexToDelete.label, indexToDelete.indexName)
-		}
-	}
+	var errors []error
+
+	// Manual migration
+	log.Info("Manual migration started ...")
+
+	// List functions in manual package and execute them
+	errors = manual.Execute()
+
+	// Automigration
+	log.Info("Auto migration started ...")
 
 	// Order should match model deletions in cmd/db/wipe.go
 	// Order is not strictly alphabetical due to dependencies (e.g. Image needs ImageSet)
@@ -168,18 +117,22 @@ func main() {
 		err := db.DB.AutoMigrate(modelsInterface.interfaceInstance)
 		if err != nil {
 			log.Warningf("database automigrate failure %s", err)
-			errorOccurred = true
+			errors = append(errors, err)
 		}
 	}
 
-	if !errorOccurred {
+	if len(errors) == 0 {
 		log.Info("Migration completed successfully")
 	} else {
-		log.Error("Migration completed with errors")
+		log.WithField("errors", errors).Error("Migration completed with errors")
+		for _, err := range errors {
+			log.Warn(err)
+		}
 	}
+
 	// flush logger before app exit
 	l.FlushLogger()
-	if errorOccurred {
+	if len(errors) > 0 {
 		os.Exit(2)
 	}
 }
