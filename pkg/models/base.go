@@ -18,11 +18,6 @@ type Model struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"DeletedAt,omitempty"`
 }
 
-// ModelWithoutTimestamps is a basic GoLang struct based on gorm.Model without timestamps
-type ModelWithoutTimestamps struct {
-	ID uint `gorm:"primarykey" json:"ID,omitempty"`
-}
-
 // EdgeAPITime is a time.Time with a valid flag.
 type EdgeAPITime sql.NullTime
 
