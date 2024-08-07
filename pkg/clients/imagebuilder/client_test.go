@@ -1047,10 +1047,8 @@ var _ = Describe("Image Builder Client Test", func() {
 
 	Describe("get metadata information", func() {
 
-		Context("when pakages exists", func() {
+		Context("when packages exists", func() {
 			BeforeEach(func() {
-				err := os.Setenv("DEDUP_INSTALLED_PACKAGES", "True")
-				Expect(err).ToNot(HaveOccurred())
 				pkgs := []models.InstalledPackage{}
 				pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
 					Version: "1",
@@ -1068,10 +1066,6 @@ var _ = Describe("Image Builder Client Test", func() {
 				db.DB.Save(img.Commit)
 				db.DB.Save(img)
 
-			})
-			AfterEach(func() {
-				// disable the feature
-				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
 			})
 			It("should not create new packages RHC into db", func() {
 				pkgs := []models.Package{}
@@ -1192,7 +1186,6 @@ var _ = Describe("Image Builder Client Test", func() {
 	Describe("Validates Package", func() {
 		AfterEach(func() {
 			db.DB.Exec("ALTER TABLE installed_packages Create COLUMN name")
-			os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
 		})
 		It("should return an existent package ", func() {
 			pkgs := []models.InstalledPackage{}
@@ -1258,9 +1251,8 @@ var _ = Describe("Image Builder Client Test", func() {
 
 	Describe("get metadata if disabled featureinformation", func() {
 
-		Context("when pakages exists", func() {
+		Context("when packages exists", func() {
 			BeforeEach(func() {
-				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
 				pkgs := []models.InstalledPackage{}
 				pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
 					Version: "1",
@@ -1278,10 +1270,6 @@ var _ = Describe("Image Builder Client Test", func() {
 				db.DB.Save(img.Commit)
 				db.DB.Save(img)
 
-			})
-			AfterEach(func() {
-				// disable the feature
-				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
 			})
 			It("should duplicates packages RHC into db", func() {
 				pkgs := []models.Package{}

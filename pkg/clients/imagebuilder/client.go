@@ -542,47 +542,16 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 
-	var packagesExistsMap map[string]*models.InstalledPackage
-
-	if feature.DedupPackage.IsEnabled() {
-		var metadataPackages []string
-		for n := range metadata.InstalledPackages {
-			metadataPackages = append(metadataPackages,
-				fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
-		}
-
-		packagesExistsMap, err = c.ValidatePackages(metadataPackages)
-		if err != nil {
-			c.log.WithField("error", err.Error).Error(new(PackageRequestError))
-			return nil, err
-		}
-	}
-
 	for n := range metadata.InstalledPackages {
-		if feature.DedupPackage.IsEnabled() {
-			if packagesExistsMap[metadata.InstalledPackages[n].Name] == nil {
-				pkg := models.InstalledPackage{
-					Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
-					Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
-					Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
-					Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
-				}
-				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
-			} else {
-				record := packagesExistsMap[metadata.InstalledPackages[n].Name]
-				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, *record)
 
-			}
-
-		} else {
-			pkg := models.InstalledPackage{
-				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
-				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
-				Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
-				Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
-			}
-			image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+		pkg := models.InstalledPackage{
+			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+			Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+			Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+			Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
 		}
+		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+
 	}
 
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
