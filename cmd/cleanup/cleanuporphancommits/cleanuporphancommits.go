@@ -211,37 +211,76 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 		gormDB = db.DB
 	}
 
-	// delete orphan installed packages
+	return cleanupOrphanInstalledPackagesSubselect(gormDB)
+}
+
+// Two implementation of the same function, one using subselect and the other using CTE
+func cleanupOrphanInstalledPackagesSubselect(gormDB *gorm.DB) error {
+	var orphans []OrphanedInstalledPackageID
 	batchSize := config.Get().CleanupBatchSize
 	var total int64
-	keepGoing := true
 	totalStartTime := time.Now()
-	for keepGoing {
+	subQuery := gormDB.Table("commit_installed_packages").Select("installed_package_id")
+	result := gormDB.Table("installed_packages").Where("id NOT IN (?)", subQuery).FindInBatches(&orphans, batchSize, func(tx *gorm.DB, batch int) error {
+		log.WithField("batch", batch).Info("deleting orphan installed packages")
 		startTime := time.Now()
-		log.WithField("batch_size", batchSize).Info("deleting one batch of orphan installed packages")
-		tx := gormDB.Unscoped().Exec(`
-			delete from installed_packages
-			where installed_packages.id in (
-				select ip.id from installed_packages ip
-				full join commit_installed_packages cip on ip.id = cip.installed_package_id
-				where cip.commit_id is null limit ?
-			);
-		`, batchSize)
-		if tx.Error != nil {
-			log.WithField("batch_size", batchSize).
-				WithField("error", tx.Error.Error()).Error("error while deleting orphan installed packages")
-			return tx.Error
+		ids := make([]uint, tx.RowsAffected)
+		for i, orphan := range orphans {
+			ids[i] = orphan.ID
 		}
-		if tx.RowsAffected <= 0 {
-			keepGoing = false
+		deleteRes := tx.Unscoped().Delete(&models.InstalledPackage{}, ids)
+		if deleteRes.Error != nil {
+			log.WithField("error", deleteRes.Error.Error()).Error("error occurred while deleting orphan installed packages")
+			return deleteRes.Error
 		}
-		total += tx.RowsAffected
-		log.WithField("batch_size", batchSize).
-			Infof("Deleted %d orphan installed packages, records per hour: %02f", tx.RowsAffected,
-				float64(tx.RowsAffected)/time.Since(startTime).Hours())
+		total += deleteRes.RowsAffected
+		log.WithField("batch", batch).
+			WithField("deleted", deleteRes.RowsAffected).
+			WithField("total", total).
+			Infof("orphan installed packages deleted successfully, with rate per hour: %02f (total rate: %02f)",
+				float64(deleteRes.RowsAffected)/time.Since(startTime).Hours(),
+				float64(total)/time.Since(totalStartTime).Hours())
+		return nil
+	})
+	if result.Error != nil {
+		log.WithField("error", result.Error.Error()).Error("error occurred while deleting orphan installed packages")
+		return result.Error
 	}
-
-	log.WithField("installed_packages_deleted", total).Infof("orphan installed packages deleted successfully: %d, records per hour: %02f",
-		total, float64(total)/time.Since(totalStartTime).Hours())
+	log.WithField("installed_packages_deleted", result.RowsAffected).Info("orphan installed packages deleted successfully")
 	return nil
 }
+
+// func cleanupOrphanInstalledPackagesCTE(gormDB *gorm.DB) error {
+// 	batchSize := config.Get().CleanupBatchSize
+// 	var total int64
+// 	keepGoing := true
+// 	totalStartTime := time.Now()
+// 	for keepGoing {
+// 		startTime := time.Now()
+// 		log.WithField("batch_size", batchSize).Info("deleting one batch of orphan installed packages")
+// 		tx := gormDB.Unscoped().Exec(`
+// 			delete from installed_packages
+// 			where installed_packages.id in (
+// 				select ip.id from installed_packages ip
+// 				full join commit_installed_packages cip on ip.id = cip.installed_package_id
+// 				where cip.commit_id is null limit ?
+// 			);
+// 		`, batchSize)
+// 		if tx.Error != nil {
+// 			log.WithField("batch_size", batchSize).
+// 				WithField("error", tx.Error.Error()).Error("error while deleting orphan installed packages")
+// 			return tx.Error
+// 		}
+// 		if tx.RowsAffected <= 0 {
+// 			keepGoing = false
+// 		}
+// 		total += tx.RowsAffected
+// 		log.WithField("batch_size", batchSize).
+// 			Infof("Deleted %d orphan installed packages, records per hour: %02f", tx.RowsAffected,
+// 				float64(tx.RowsAffected)/time.Since(startTime).Hours())
+// 	}
+
+// 	log.WithField("installed_packages_deleted", total).Infof("orphan installed packages deleted successfully: %d, records per hour: %02f",
+// 		total, float64(total)/time.Since(totalStartTime).Hours())
+// 	return nil
+// }
