@@ -211,7 +211,24 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 		gormDB = db.DB
 	}
 
-	return cleanupOrphanInstalledPackagesCTE(gormDB)
+	tx := gormDB.Unscoped().Exec(`alter table commit_installed_packages disable trigger all`)
+	if tx.Error != nil {
+		// only superuser can disable system triggers so this can actually fail
+		log.WithField("error", tx.Error.Error()).Warn("error while disabling triggers")
+	}
+
+	err := cleanupOrphanInstalledPackagesPlain(gormDB)
+	if err != nil {
+		log.WithField("error", err).Errorf("error cleaning up packages: %s", err.Error())
+		return tx.Error
+	}
+
+	tx = gormDB.Unscoped().Exec(`alter table commit_installed_packages enable trigger all`)
+	if tx.Error != nil {
+		// only superuser can disable system triggers so this can actually fail
+		log.WithField("error", tx.Error.Error()).Warn("error while enabling triggers")
+	}
+	return nil
 }
 
 // Two implementation of the same function, one using subselect and the other using CTE
@@ -250,7 +267,7 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 // 	return nil
 // }
 
-func cleanupOrphanInstalledPackagesCTE(gormDB *gorm.DB) error {
+func cleanupOrphanInstalledPackagesPlain(gormDB *gorm.DB) error {
 	batchSize := config.Get().CleanupBatchSize
 	var total int64
 	keepGoing := true
