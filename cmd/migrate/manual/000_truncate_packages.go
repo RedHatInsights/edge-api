@@ -1,8 +1,10 @@
 package manual
 
 import (
+	"strings"
+
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -11,7 +13,7 @@ func init() {
 }
 
 func truncatePackages() error {
-	if feature.TruncatePackages.IsEnabled() {
+	if strings.Contains(config.Get().EdgeAPIBaseURL, "stage") {
 		log.Info("Truncating packages table ...")
 		if err := db.DB.Exec("TRUNCATE TABLE commit_installed_packages, installed_packages").Error; err != nil {
 			return err
