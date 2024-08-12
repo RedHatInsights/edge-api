@@ -211,61 +211,14 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 		gormDB = db.DB
 	}
 
-	tx := gormDB.Unscoped().Exec(`alter table commit_installed_packages disable trigger all`)
-	if tx.Error != nil {
-		// only superuser can disable system triggers so this can actually fail
-		log.WithField("error", tx.Error.Error()).Warn("error while disabling triggers")
-	}
-
 	err := cleanupOrphanInstalledPackagesPlain(gormDB)
 	if err != nil {
 		log.WithField("error", err).Errorf("error cleaning up packages: %s", err.Error())
-		return tx.Error
+		return err
 	}
 
-	tx = gormDB.Unscoped().Exec(`alter table commit_installed_packages enable trigger all`)
-	if tx.Error != nil {
-		// only superuser can disable system triggers so this can actually fail
-		log.WithField("error", tx.Error.Error()).Warn("error while enabling triggers")
-	}
 	return nil
 }
-
-// Two implementation of the same function, one using subselect and the other using CTE
-// func cleanupOrphanInstalledPackagesSubselect(gormDB *gorm.DB) error {
-// 	var orphans []OrphanedInstalledPackageID
-// 	batchSize := config.Get().CleanupBatchSize
-// 	var total int64
-// 	totalStartTime := time.Now()
-// 	subQuery := gormDB.Table("commit_installed_packages").Select("installed_package_id")
-// 	result := gormDB.Table("installed_packages").Where("id NOT IN (?)", subQuery).FindInBatches(&orphans, batchSize, func(tx *gorm.DB, batch int) error {
-// 		log.WithField("batch", batch).Info("deleting orphan installed packages")
-// 		startTime := time.Now()
-// 		ids := make([]uint, tx.RowsAffected)
-// 		for i, orphan := range orphans {
-// 			ids[i] = orphan.ID
-// 		}
-// 		deleteRes := tx.Unscoped().Delete(&models.InstalledPackage{}, ids)
-// 		if deleteRes.Error != nil {
-// 			log.WithField("error", deleteRes.Error.Error()).Error("error occurred while deleting orphan installed packages")
-// 			return deleteRes.Error
-// 		}
-// 		total += deleteRes.RowsAffected
-// 		log.WithField("batch", batch).
-// 			WithField("deleted", deleteRes.RowsAffected).
-// 			WithField("total", total).
-// 			Infof("orphan installed packages deleted successfully, with rate per hour: %02f (total rate: %02f)",
-// 				float64(deleteRes.RowsAffected)/time.Since(startTime).Hours(),
-// 				float64(total)/time.Since(totalStartTime).Hours())
-// 		return nil
-// 	})
-// 	if result.Error != nil {
-// 		log.WithField("error", result.Error.Error()).Error("error occurred while deleting orphan installed packages")
-// 		return result.Error
-// 	}
-// 	log.WithField("installed_packages_deleted", result.RowsAffected).Info("orphan installed packages deleted successfully")
-// 	return nil
-// }
 
 func cleanupOrphanInstalledPackagesPlain(gormDB *gorm.DB) error {
 	batchSize := config.Get().CleanupBatchSize
