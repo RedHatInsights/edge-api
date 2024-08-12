@@ -45,6 +45,16 @@ func main() {
 	// List functions in manual package and execute them
 	errors = manual.Execute()
 
+	// Disable foreign key constraints when migrating to be able to delete the constraint
+	// TODO: delete this workaround once images are cleaned up properly
+	db.DB.Config.DisableForeignKeyConstraintWhenMigrating = true
+	if db.DB.Migrator().HasConstraint("commit_installed_packages", "fk_commit_installed_packages_installed_package") {
+		log.Info("Dropping foreign key constraint fk_commit_installed_packages_installed_package")
+		if err := db.DB.Migrator().DropConstraint("commit_installed_packages", "fk_commit_installed_packages_installed_package"); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
 	// Automigration
 	log.Info("Auto migration started ...")
 
@@ -129,6 +139,9 @@ func main() {
 			log.Warn(err)
 		}
 	}
+
+	constraintExists := db.DB.Migrator().HasConstraint("commit_installed_packages", "fk_commit_installed_packages_installed_package")
+	log.Infof("Foreign key constraint fk_commit_installed_packages_installed_package exists: %v", constraintExists)
 
 	// flush logger before app exit
 	l.FlushLogger()
