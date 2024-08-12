@@ -83,9 +83,6 @@ var CleanUPDevices = &Flag{Name: "edge-management.cleanup_devices", EnvVar: "FEA
 // CleanUPOrphanCommits is a feature flag to use for cleanup orphan commits
 var CleanUPOrphanCommits = &Flag{Name: "edge-management.cleanup_orphan_commits", EnvVar: "FEATURE_CLEANUP_ORPHAN_COMMITS"}
 
-// TruncatePackages enables the truncation of packages tables during migration
-var TruncatePackages = &Flag{Name: "edge-management.truncate_packages", EnvVar: "TRUNCATE_PACKAGES"}
-
 // STATIC DELTA FLAGS
 
 // SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
