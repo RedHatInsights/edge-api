@@ -47,7 +47,7 @@ jobs:
             --sort-results=true
             --timeout=5m0s
             --uniq-by-line=false
-          only-new-issues: false
+          only-new-issues: true
 
   openapi:
     name: OpenAPI
