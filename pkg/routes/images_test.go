@@ -78,7 +78,7 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
@@ -119,7 +119,7 @@ func TestCreate(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
@@ -167,7 +167,7 @@ func TestCreateWithInvalidPackageName(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
@@ -212,7 +212,7 @@ func TestCreateWithThirdPartyRepositoryInfoInvalid(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
@@ -257,7 +257,7 @@ func TestCreateWithImageNameAlreadyExist(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
@@ -312,12 +312,12 @@ func TestGetStatus(t *testing.T) {
 	}
 	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	err = json.Unmarshal(respBody, &ir)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 
@@ -362,12 +362,12 @@ func TestGetImageDetailsById(t *testing.T) {
 	var ir ImageResponse
 	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	err = json.Unmarshal(respBody, &ir)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if ir.Packages != 1 {
@@ -430,12 +430,12 @@ func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
 	var ir ImageResponse
 	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	err = json.Unmarshal(respBody, &ir)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if ir.Packages != 1 {
@@ -692,12 +692,12 @@ func TestGetRepoForImage(t *testing.T) {
 	var repoResponse models.Repo
 	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	err = json.Unmarshal(respBody, &repoResponse)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if repoResponse.ID != testRepo.ID {
@@ -760,12 +760,12 @@ func TestGetImageByOstree(t *testing.T) {
 	var ir models.Image
 	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	err = json.Unmarshal(respBody, &ir)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	if ir.ID != testImage.ID {
@@ -793,7 +793,7 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
@@ -842,7 +842,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(jsonImage)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/checkImageName", &buf)
 	if err != nil {
@@ -865,7 +865,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 	var ir bool
 	if err := json.Unmarshal(respBody, &ir); err != nil {

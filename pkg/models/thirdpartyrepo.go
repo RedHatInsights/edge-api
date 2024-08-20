@@ -4,7 +4,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -66,7 +65,7 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 		return errors.New(RepoNameCantBeInvalidMessage)
 	}
 	if !ValidateRepoURL(t.URL) {
-		return fmt.Errorf(InvalidURL)
+		return errors.New(InvalidURL)
 	}
 	return nil
 }
