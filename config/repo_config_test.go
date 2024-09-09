@@ -3,28 +3,41 @@
 package config
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 )
 
 // Validate distribution ref values should return refs by distribution"
 func TestValidateRepo(t *testing.T) {
+	// matches rhel-80 format and rhel-8.10 format
+	dre := regexp.MustCompile(`(?P<dist>rhel)-((?P<maj>\d)(?P<min>\d)|(?P<maj>\d+)\.(?P<min>\d+))`)
 	for key, d := range DistributionsRefs {
+		// match the distro string
+		match := dre.FindSubmatch([]byte(key))
+		if match == nil {
+			t.Errorf("%s does not match the requested pattern", key)
+			return
+		}
 
-		dist := strings.Split(key, "-")
-		distribution := dist[0]
-		version := strings.Split(dist[1], "")
-		majorVersion := strings.Join(version[:len(version)-1], "")
+		// construct a map of groups: dist, maj, min
+		grp := make(map[string]string)
+		for i, name := range dre.SubexpNames() {
+			if i != 0 && name != "" {
+				grp[name] = string(match[i])
+			}
+		}
 
+		// validate
 		t.Run("validate distribution", func(t *testing.T) {
-			if !strings.Contains(DistributionsRefs[key], distribution) {
-				t.Errorf(" %q not found: %q", distribution, DistributionsRefs[d])
+			if !strings.Contains(DistributionsRefs[key], grp["dist"]) {
+				t.Errorf(" %q not found: %q", grp["dist"], DistributionsRefs[d])
 			}
 		})
 
 		t.Run("validate major", func(t *testing.T) {
-			if !strings.Contains(DistributionsRefs[key], majorVersion) {
-				t.Errorf("%q not found: %q", majorVersion, DistributionsRefs[d])
+			if !strings.Contains(DistributionsRefs[key], grp["maj"]) {
+				t.Errorf("%q not found: %q", grp["maj"], DistributionsRefs[d])
 			}
 		})
 

@@ -3,12 +3,15 @@
 package config
 
 // List of supported RHEL distributions
+// See https://github.com/osbuild/image-builder/blob/main/internal/v1/api.yaml#L1083
+// schema component Distributions
 const distRHEL84 = "rhel-84"
 const distRHEL85 = "rhel-85"
 const distRHEL86 = "rhel-86"
 const distRHEL87 = "rhel-87"
 const distRHEL88 = "rhel-88"
 const distRHEL89 = "rhel-89"
+const distRHEL810 = "rhel-8.10"
 const distRHEL90 = "rhel-90"
 const distRHEL91 = "rhel-91"
 const distRHEL92 = "rhel-92"
@@ -46,6 +49,7 @@ var DistributionsPackages = map[string][]string{
 	distRHEL87: RHEL8X,
 	distRHEL88: RHEL8X,
 	distRHEL89: RHEL8X,
+	distRHEL810: RHEL8X,
 	distRHEL90: RHEL9,
 	distRHEL91: RHEL9,
 	distRHEL92: RHEL9,
@@ -61,6 +65,7 @@ var DistributionsRefs = map[string]string{
 	distRHEL87: OstreeRefRHEL8,
 	distRHEL88: OstreeRefRHEL8,
 	distRHEL89: OstreeRefRHEL8,
+	distRHEL810: OstreeRefRHEL8,
 	distRHEL90: OstreeRefRHEL9,
 	distRHEL91: OstreeRefRHEL9,
 	distRHEL92: OstreeRefRHEL9,
