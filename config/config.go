@@ -511,6 +511,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"RepoFileUploadAttempts":   cfg.RepoFileUploadAttempts,
 		"RepoFileUploadDelay":      cfg.RepoFileUploadDelay,
 		"UploadWorkers":            cfg.UploadWorkers,
+		"PulpURL":                  cfg.PulpURL,
 	}
 
 	// loop through the key/value pairs

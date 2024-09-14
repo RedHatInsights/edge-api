@@ -5,6 +5,7 @@
 package mock_services
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -136,16 +137,16 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) RepoPullLocalStaticDeltas(u, o, 
 }
 
 // StoreRepo mocks base method.
-func (m *MockRepoBuilderInterface) StoreRepo(r *models.Repo) (*models.Repo, error) {
+func (m *MockRepoBuilderInterface) StoreRepo(arg0 context.Context, arg1 *models.Repo) (*models.Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreRepo", r)
+	ret := m.ctrl.Call(m, "StoreRepo", arg0, arg1)
 	ret0, _ := ret[0].(*models.Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // StoreRepo indicates an expected call of StoreRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) StoreRepo(r interface{}) *gomock.Call {
+func (mr *MockRepoBuilderInterfaceMockRecorder) StoreRepo(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).StoreRepo), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).StoreRepo), arg0, arg1)
 }

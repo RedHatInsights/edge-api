@@ -439,12 +439,25 @@ func (c *Client) GetComposeStatus(jobID string) (*ComposeStatus, error) {
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),
 		"error":        err,
-	}).Debug("Image Builder ComposeStatus Response")
+	}).Trace("Image Builder ComposeStatus Response")
+
 	if err != nil {
+		c.log.WithFields(log.Fields{
+			"statusCode":   res.StatusCode,
+			"responseBody": string(body),
+			"error":        err,
+		}).Error("Error reading compose status response")
+
 		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		c.log.WithFields(log.Fields{
+			"statusCode":   res.StatusCode,
+			"responseBody": string(body),
+			"error":        err,
+		}).Error("Error compose status HTTP response not StatusOK")
+
 		return nil, fmt.Errorf("request for status was not successful")
 	}
 
@@ -454,6 +467,14 @@ func (c *Client) GetComposeStatus(jobID string) (*ComposeStatus, error) {
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	if cs.ImageStatus.Status == imageStatusSuccess {
+		c.log.WithFields(log.Fields{
+			"statusCode":   res.StatusCode,
+			"responseBody": string(body),
+			"error":        err,
+		}).Info("Image Builder ComposeStatus Response")
 	}
 
 	return cs, nil

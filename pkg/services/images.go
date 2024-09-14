@@ -878,11 +878,14 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	}
 	s.log.Debug("OSTree repo was saved to commit")
 
+	// TODO: move this to repobuilder and replace with single call to StoreRepo w/ interface
 	var repository *models.Repo
 	var err error
 	if feature.PulpIntegration.IsEnabled() {
-		repository, err = s.RepoBuilder.StoreRepo(repo)
+		s.log.Debug("Running Pulp repo process")
+		repository, err = s.RepoBuilder.StoreRepo(ctx, repo)
 	} else {
+		s.log.Debug("Running AWS repo process")
 		repository, err = s.RepoBuilder.ImportRepo(repo)
 	}
 	if err != nil {

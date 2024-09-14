@@ -206,7 +206,13 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctxServices.Log.Debug("Creating image from API request")
+	storageBackend := "AWS"
+	if feature.PulpIntegration.IsEnabled() {
+		storageBackend = "Pulp"
+	}
+
+	ctxServices.Log.WithField("storage_backend", storageBackend).Debug("Creating image from API request")
+
 	// initial checks and filling in necessary image info
 	if err = ctxServices.ImageService.CreateImage(image); err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating the image")
