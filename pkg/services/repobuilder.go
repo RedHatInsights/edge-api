@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/repostore"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/cavaliercoder/grab"
@@ -27,7 +30,7 @@ var BuildCommand = exec.Command
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
-	StoreRepo(r *models.Repo) (*models.Repo, error)
+	StoreRepo(context.Context, *models.Repo) (*models.Repo, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 	CommitTarDownload(c *models.Commit, dest string) (string, error)
 	CommitTarExtract(c *models.Commit, tarFileName string, dest string) error
@@ -364,11 +367,45 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 }
 
 // StoreRepo requests Pulp to create/update an ostree repo from an IB commit
-func (rb *RepoBuilder) StoreRepo(repo *models.Repo) (*models.Repo, error) {
-	// FIXME: add the Pulp repo create here
-	// 	this allows both to happen until code that updates the DB is added
+func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
+	var cmt models.Commit
+	cmtDB := db.DB.Where("repo_id = ?", repo.ID).First(&cmt)
+	if cmtDB.Error != nil {
+		return nil, cmtDB.Error
+	}
 
-	return rb.ImportRepo(repo)
+	var err error
+	if feature.PulpIntegration.IsEnabled() {
+		log.WithContext(ctx).Debug("Running Pulp repo process")
+
+		repoURL, err := repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL)
+		if err != nil {
+			log.WithContext(ctx).WithField("error", err.Error()).Error("Error storing Image Builder commit in Pulp OSTree repo")
+
+			return nil, err
+		}
+
+		repo.URL = repoURL
+		repo.Status = models.RepoStatusSuccess
+	} else {
+		// run the legacy AWS repo storage and return
+		log.WithContext(ctx).Debug("Running AWS repo process")
+		repo, err = rb.ImportRepo(repo)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	result := db.DB.Save(&repo)
+	if result.Error != nil {
+		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
+	}
+
+	redactedURL, _ := url.Parse(repo.URL)
+	log.WithContext(ctx).WithField("repo_url", redactedURL.Redacted()).Info("Commit stored in Pulp OSTree repo")
+
+	return repo, nil
 }
 
 // ImportRepo (unpack and upload) a single repo

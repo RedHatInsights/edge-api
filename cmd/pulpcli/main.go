@@ -74,8 +74,7 @@ func fixtureCreate(ctx context.Context, c *pulp.PulpService, orgID, _ string) {
 	fmt.Println("Repository imported", *repoImported.PulpHref)
 	fmt.Println("--------------------------------")
 
-	err = c.FileRepositoriesVersionDelete(ctx, pulp.ScanUUID(&version), pulp.ScanRepoFileVersion(&version))
-	if err != nil {
+	if err = c.FileRepositoriesVersionDelete(ctx, pulp.ScanUUID(&version), pulp.ScanRepoFileVersion(&version)); err != nil {
 		panic(err)
 	}
 	fmt.Println("Artifact version deleted", version)

@@ -881,8 +881,10 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	var repository *models.Repo
 	var err error
 	if feature.PulpIntegration.IsEnabled() {
-		repository, err = s.RepoBuilder.StoreRepo(repo)
+		s.log.Debug("Running Pulp repo process")
+		repository, err = s.RepoBuilder.StoreRepo(ctx, repo)
 	} else {
+		s.log.Debug("Running AWS repo process")
 		repository, err = s.RepoBuilder.ImportRepo(repo)
 	}
 	if err != nil {
