@@ -2,13 +2,11 @@
 # STEP 1: build executable edge-api binaries
 ############################################
 FROM registry.access.redhat.com/ubi9/go-toolset:1.21 AS edge-builder
+USER root
 WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
 COPY . .
-# Use go mod
-ENV GO111MODULE=on
-# Fetch dependencies.
-# Using go get requires root.
-USER root
+
+# Download dependencies
 RUN go get -d -v
 
 # Build the binary.
