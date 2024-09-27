@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -891,7 +892,8 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 		return nil, err
 	}
 
-	s.log.WithField("url", repository.URL).Info("OSTree repo is ready")
+	parsedURL, _ := url.Parse(repository.URL)
+	s.log.WithField("url", parsedURL.Redacted()).Info("OSTree repo is ready")
 
 	return repository, nil
 }

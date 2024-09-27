@@ -455,7 +455,6 @@ func (c *Client) GetComposeStatus(jobID string) (*ComposeStatus, error) {
 		c.log.WithFields(log.Fields{
 			"statusCode":   res.StatusCode,
 			"responseBody": string(body),
-			"error":        err,
 		}).Error("Error compose status HTTP response not StatusOK")
 
 		return nil, fmt.Errorf("request for status was not successful")
@@ -473,8 +472,7 @@ func (c *Client) GetComposeStatus(jobID string) (*ComposeStatus, error) {
 		c.log.WithFields(log.Fields{
 			"statusCode":   res.StatusCode,
 			"responseBody": string(body),
-			"error":        err,
-		}).Info("Image Builder ComposeStatus Response")
+		}).Info("ImageBuilder ComposeStatus successful response")
 	}
 
 	return cs, nil
