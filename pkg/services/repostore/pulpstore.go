@@ -197,7 +197,7 @@ func fileRepoImport(ctx context.Context, pulpService *pulp.PulpService, sourceUR
 		return "", "", err
 	}
 
-	log.WithContext(ctx).Info("File repo found or created: ", fileRepo)
+	log.WithContext(ctx).WithField("file_repo", fileRepo).Info("File repo found or created")
 
 	artifact, version, err := pulpService.FileRepositoriesImport(ctx, fileRepo, sourceURL)
 	if err != nil {
