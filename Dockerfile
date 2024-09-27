@@ -1,7 +1,7 @@
 ############################################
 # STEP 1: build executable edge-api binaries
 ############################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.21 AS edge-builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.21 AS edge-builder
 WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
 COPY . .
 # Use go mod
@@ -35,7 +35,7 @@ RUN go build -o /go/bin/edge-api-cleanup cmd/cleanup/main.go
 ####################################
 # STEP 2: build edge-api minimal image
 ####################################
-FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 LABEL maintainer="Red Hat, Inc."
 
 # label for EULA
