@@ -91,6 +91,7 @@ type EdgeConfig struct {
 	PulpS3Region               string                    `json:"pulp_s3_region,omitempty"`
 	PulpS3SecretKey            string                    `json:"pulp_s3_secret_key,omitempty"`
 	PulpS3AccessKey            string                    `json:"pulp_s3_access_key,omitempty"`
+	PulpGuardSubjectDN         string                    `json:"pulp_guard_subject_dn,omitempty"`
 	CleanupBatchSize           int                       `json:"cleanup_batch_size,omitempty"`
 }
 
@@ -175,20 +176,21 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("DeleteFilesRetryDelay", 5)
 	options.SetDefault("RBAC_BASE_URL", "http://rbac-service:8080")
 	options.SetDefault("RbacTimeout", 30)
-	options.SetDefault("PulpURL", "http://pulp-service:8080")
-	options.SetDefault("PulpUsername", "edge-api-dev")
-	options.SetDefault("PulpPassword", "")
-	options.SetDefault("PulpContentUsername", "edge-content-dev")
-	options.SetDefault("PulpContentPassword", "")
+	options.SetDefault("PULP_URL", "http://pulp-service:8080")
+	options.SetDefault("PULP_USERNAME", "edge-api-dev")
+	options.SetDefault("PULP_PASSWORD", "")
+	options.SetDefault("PULP_CONTENT_USERNAME", "edge-content-dev")
+	options.SetDefault("PULP_CONTENT_PASSWORD", "")
 	options.SetDefault("PulpIdentityName", "edge-api-dev")
 	options.SetDefault("PulpProxyURL", "")
 	options.SetDefault("PulpOauth2URL", "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
 	options.SetDefault("PulpOauth2ClientID", "")
 	options.SetDefault("PulpOauth2ClientSecret", "")
-	options.SetDefault("PulpS3BucketName", "")
-	options.SetDefault("PulpS3Region", "DummyRegion")
-	options.SetDefault("PulpS3SecretKey", "")
-	options.SetDefault("PulpS3AccessKey", "")
+	options.SetDefault("PULP_S3_BUCKETNAME", "")
+	options.SetDefault("PULP_S3_REGION", "DummyRegion")
+	options.SetDefault("PULP_S3_SECRETKEY", "")
+	options.SetDefault("PULP_S3_ACCESSKEY", "")
+	options.SetDefault("PULP_GUARD_SUBJECT_DN", "")
 	options.SetDefault("CleanupBatchSize", "500")
 	options.AutomaticEnv()
 
@@ -285,20 +287,21 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		RbacTimeout:                options.GetUint("RbacTimeout"),
 		SubscriptionServerURL:      options.GetString("SUBSCRIPTION_SERVER_URL"),
 		SubscriptionBaseUrl:        options.GetString("SUBSCRIPTION_BASE_URL"),
-		PulpURL:                    options.GetString("PulpURL"),
-		PulpUsername:               options.GetString("PulpUsername"),
-		PulpPassword:               options.GetString("PulpPassword"),
-		PulpContentUsername:        options.GetString("PulpContentUsername"),
-		PulpContentPassword:        options.GetString("PulpContentPassword"),
+		PulpURL:                    options.GetString("PULP_URL"),
+		PulpUsername:               options.GetString("PULP_USERNAME"),
+		PulpPassword:               options.GetString("PULP_PASSWORD"),
+		PulpContentUsername:        options.GetString("PULP_CONTENT_USERNAME"),
+		PulpContentPassword:        options.GetString("PULP_CONTENT_PASSWORD"),
 		PulpIdentityName:           options.GetString("PulpIdentityName"),
 		PulpProxyURL:               options.GetString("PulpProxyURL"),
 		PulpOauth2URL:              options.GetString("PulpOauth2URL"),
 		PulpOauth2ClientID:         options.GetString("PulpOauth2ClientID"),
 		PulpOauth2ClientSecret:     options.GetString("PulpOauth2ClientSecret"),
-		PulpS3BucketName:           options.GetString("PulpS3BucketName"),
-		PulpS3Region:               options.GetString("PulpS3Region"),
-		PulpS3SecretKey:            options.GetString("PulpS3SecretKey"),
-		PulpS3AccessKey:            options.GetString("PulpS3AccessKey"),
+		PulpS3BucketName:           options.GetString("PULP_S3_BUCKETNAME"),
+		PulpS3Region:               options.GetString("PULP_S3_REGION"),
+		PulpS3SecretKey:            options.GetString("PULP_S3_SECRETKEY"),
+		PulpS3AccessKey:            options.GetString("PULP_S3_ACCESSKEY"),
+		PulpGuardSubjectDN:         options.GetString("PULP_GUARD_SUBJECT_DN"),
 		CleanupBatchSize:           options.GetInt("CleanupBatchSize"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
@@ -512,6 +515,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"RepoFileUploadDelay":      cfg.RepoFileUploadDelay,
 		"UploadWorkers":            cfg.UploadWorkers,
 		"PulpURL":                  cfg.PulpURL,
+		"PulpGuardSubjectDN":       cfg.PulpGuardSubjectDN,
 	}
 
 	// loop through the key/value pairs

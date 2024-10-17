@@ -22,6 +22,42 @@ objects:
     name: glitchtip-dsn
   stringData:
     dsn: ${GLITCHTIP_DSN}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: edge-pulp-password
+  stringData:
+    key: ${PULP_PASSWORD}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: edge-pulp-content-password
+  stringData:
+    key: ${PULP_CONTENT_PASSWORD}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: edge-pulp-test-s3
+  stringData:
+    region: ${PULP_S3_REGION}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: edge-pulp-test-s3
+  stringData:
+    bucketname: ${PULP_S3_BUCKETNAME}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: edge-pulp-test-s3
+  stringData:
+    accesskey: ${PULP_S3_ACCESSKEY}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: edge-pulp-test-s3
+  stringData:
+    secretkey: ${PULP_S3_SECRETKEY}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -136,6 +172,44 @@ objects:
           value: ${SUBSCRIPTION_BASE_URL}
         - name : SUBSCRIPTION_SERVER_URL
           value: ${SUBSCRIPTION_SERVER_URL}
+        - name : PULP_URL
+          value: ${PULP_URL}
+        - name : PULP_USERNAME
+          value: ${PULP_USERNAME}
+        - name : PULP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: edge-pulp-password
+              key: key
+        - name : PULP_CONTENT_USERNAME
+          value: ${PULP_CONTENT_USERNAME}
+        - name : PULP_CONTENT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: edge-pulp-content-password
+              key: key
+        - name : PULP_S3_REGION
+          valueFrom:
+            secretKeyRef:
+              name: edge-pulp-test-s3
+              key: region
+        - name : PULP_S3_BUCKETNAME
+          valueFrom:
+            secretKeyRef:
+              name: edge-pulp-test-s3
+              key: bucketname
+        - name : PULP_S3_ACCESSKEY
+          valueFrom:
+            secretKeyRef:
+              name: edge-pulp-test-s3
+              key: accesskey
+        - name : PULP_S3_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: edge-pulp-test-s3
+              key: secretkey
+        - name : PULP_GUARD_SUBJECT_DN
+          value: ${PULP_GUARD_SUBJECT_DN}
         resources:
           limits:
             cpu: ${CPU_LIMIT_SERVICE}
@@ -502,3 +576,27 @@ parameters:
 - name: FLOORIST_QUERY_PREFIX
   description: Prefix for separating query data between prod and stage in the bucket
   value: "hms_analytics/edge/unknown"
+- name: PULP_URL
+  description: Pulp service URL
+  value: "http://pulp-service:8080"
+- name: PULP_USERNAME
+  description: Username for Pulp API authentication
+  value: "pulp-user"
+- name: PULP_PASSWORD
+  description: Password for Pulp API authentication
+- name: PULP_CONTENT_USERNAME
+  description: Username for Pulp Content API authentication
+  value: "pulp-content-user"
+- name: PULP_CONTENT_PASSWORD
+  description: Password for Pulp Content API authentication
+- name: PULP_GUARD_SUBJECT_DN
+  description: Service account DN 
+  value: "pulp/guard/subject/dn"
+- name: PULP_S3_REGION
+  description: S3 region for Pulp backend store
+- name: PULP_S3_BUCKETNAME
+  description: S3 bucket for Pulp backend store
+- name: PULP_S3_ACCESSKEY
+  description: S3 accesskey for Pulp backend store
+- name: PULP_S3_SECRETKEY
+  description: S3 secret key for Pulp backend store
