@@ -467,7 +467,7 @@ parameters:
 - description: Image name
   name: IMAGE
   required: false
-  value: quay.io/cloudservices/edge-api
+  value: quay.io/redhat-services-prod/insights-management-tenant/insights-edge/edge-backend
 - description: Determines if Clowder deployment is enabled
   name: CLOWDER_ENABLED
   required: false
