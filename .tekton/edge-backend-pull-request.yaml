@@ -239,13 +239,15 @@ spec:
       - prefetch-dependencies
       taskRef:
         params:
-        - name: name
-          value: buildah
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-buildah:0.2@sha256:67f0290a8ad9a147cd28bb06af182b3e4b2b3ef17070196d476d8e2ae4302ecf
+        - name: url
+          value: https://github.com/brianwcook/build-definitions.git
+        - name: revision
+          value: pre-registration
+        - name: pathInRepo
+          value: task/buildah/0.2/buildah.yaml
         - name: kind
           value: task
-        resolver: bundles
+        resolver: git
       when:
       - input: $(tasks.init.results.build)
         operator: in
