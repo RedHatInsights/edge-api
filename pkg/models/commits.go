@@ -21,6 +21,10 @@ const (
 	RepoStatusBuilding = "BUILDING"
 	// RepoStatusError is for when a Repo is on a error state
 	RepoStatusError = "ERROR"
+	// RepoStatusPending is for when the repo process is starting
+	RepoStatusPending = "PENDING"
+	// RepoStatusSkipped is for when a Repo is available to the user
+	RepoStatusSkipped = "SKIPPED"
 	// RepoStatusSuccess is for when a Repo is available to the user
 	RepoStatusSuccess = "SUCCESS"
 )
@@ -54,8 +58,10 @@ type Commit struct {
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
 	Model
-	URL    string `json:"RepoURL"`
-	Status string `json:"RepoStatus"`
+	URL        string `json:"RepoURL"`
+	Status     string `json:"RepoStatus"`
+	PulpURL    string `json:"pulp_repo_url"`
+	PulpStatus string `json:"pulp_repo_status"`
 }
 
 // Package represents the packages a Commit can have

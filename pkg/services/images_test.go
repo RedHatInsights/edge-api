@@ -2593,12 +2593,46 @@ var _ = Describe("Image Service Test", func() {
 			Expect(repo.ID).To(Equal(expectedRepo.ID))
 		})
 
-		It("should return error when ImportRepo fails", func() {
-			expecteError := errors.New("expected RepoBuilder.ImportRepo error")
-			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(nil, expecteError)
+		It("should return successfully if AWS repo status is success", func() {
+			expectedRepo := models.Repo{
+				URL:        faker.URL(),
+				Status:     models.RepoStatusSuccess,
+				PulpURL:    faker.URL(),
+				PulpStatus: models.RepoStatusError,
+			}
+			err := db.DB.Create(&expectedRepo).Error
+			Expect(err).ToNot(HaveOccurred())
+			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+			_, err = service.CreateRepoForImage(context.Background(), image)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return successfully if Pulp repo status is success", func() {
+			expectedRepo := models.Repo{
+				URL:        faker.URL(),
+				Status:     models.RepoStatusError,
+				PulpURL:    faker.URL(),
+				PulpStatus: models.RepoStatusSuccess,
+			}
+			err := db.DB.Create(&expectedRepo).Error
+			Expect(err).ToNot(HaveOccurred())
+			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+			_, err = service.CreateRepoForImage(context.Background(), image)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return error if AWS AND Pulp repo status is not success", func() {
+			expectedRepo := models.Repo{
+				URL:        faker.URL(),
+				Status:     models.RepoStatusError,
+				PulpURL:    faker.URL(),
+				PulpStatus: models.RepoStatusError,
+			}
+			expectedError := errors.New("No repo has been created")
+			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, expectedError)
 			_, err := service.CreateRepoForImage(context.Background(), image)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(expecteError))
+			Expect(err).To(MatchError(expectedError))
 		})
 	})
 
