@@ -371,38 +371,33 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 	var cmt models.Commit
 	cmtDB := db.DB.Where("repo_id = ?", repo.ID).First(&cmt)
 	if cmtDB.Error != nil {
-		return nil, cmtDB.Error
+		return repo, cmtDB.Error
 	}
 
 	var err error
-	if feature.PulpIntegration.IsEnabled() {
-		log.WithContext(ctx).Debug("Running Pulp repo process")
+	log.WithContext(ctx).Debug("Storing repo via Pulp")
+	repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL)
+	if err != nil {
+		log.WithContext(ctx).WithField("error", err.Error()).Error("Error storing Image Builder commit in Pulp OSTree repo")
 
-		repoURL, err := repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL)
-		if err != nil {
-			log.WithContext(ctx).WithField("error", err.Error()).Error("Error storing Image Builder commit in Pulp OSTree repo")
-
-			return nil, err
+		repo.PulpStatus = models.RepoStatusError
+		result := db.DB.Save(&repo)
+		if result.Error != nil {
+			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+			return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
 		}
 
-		repo.URL = repoURL
-		repo.Status = models.RepoStatusSuccess
-	} else {
-		// run the legacy AWS repo storage and return
-		log.WithContext(ctx).Debug("Running AWS repo process")
-		repo, err = rb.ImportRepo(repo)
-	}
-	if err != nil {
-		return nil, err
+		return repo, err
 	}
 
+	repo.PulpStatus = models.RepoStatusSuccess
 	result := db.DB.Save(&repo)
 	if result.Error != nil {
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
-		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
+		return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
 
-	redactedURL, _ := url.Parse(repo.URL)
+	redactedURL, _ := url.Parse(repo.PulpURL)
 	log.WithContext(ctx).WithField("repo_url", redactedURL.Redacted()).Info("Commit stored in Pulp OSTree repo")
 
 	return repo, nil
@@ -416,9 +411,10 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if cmtDB.Error != nil {
 		return nil, cmtDB.Error
 	}
+
 	cfg := config.Get()
 	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10)))
-	rb.log.WithField("path", path).Debug("Importing repo...")
+	rb.log.WithField("path", path).Debug("Storing repo via AWS S3")
 	err := os.MkdirAll(path, os.FileMode(0755))
 	if err != nil {
 		rb.log.Error(err)
@@ -479,6 +475,9 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
 		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
+
+	redactedURL, _ := url.Parse(r.URL)
+	rb.log.WithField("repo_url", redactedURL.Redacted()).Info("Commit stored in AWS OSTree repo")
 
 	return r, nil
 }

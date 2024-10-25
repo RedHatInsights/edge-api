@@ -348,10 +348,15 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 // NewTemplateRemoteInfo contains the info for the ostree remote file to be written to the system
 func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
 
+	updateURL := update.Repo.URL
+	if feature.PulpIntegrationUpdateViaPulp.IsEnabled() {
+		updateURL = update.Repo.PulpURL
+	}
+
 	return TemplateRemoteInfo{
-		RemoteURL:           update.Repo.URL,
+		RemoteURL:           updateURL,
 		RemoteName:          "rhel-edge",
-		ContentURL:          update.Repo.URL,
+		ContentURL:          updateURL,
 		UpdateTransactionID: update.ID,
 		GpgVerify:           config.Get().GpgVerify,
 		OSTreeRef:           update.Commit.OSTreeRef,

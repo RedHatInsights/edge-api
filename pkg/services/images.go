@@ -857,11 +857,55 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 	return nil
 }
 
+func (s *ImageService) runPulpRepoProcess(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
+	repo.PulpStatus = models.RepoStatusBuilding
+	result := db.DB.Save(&repo)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+		return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
+	}
+
+	repo, err := s.RepoBuilder.StoreRepo(ctx, repo)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error importing ostree repo into Pulp")
+		repo.PulpStatus = models.RepoStatusError
+		result := db.DB.Save(&repo)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+			return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
+		}
+	}
+
+	return repo, nil
+}
+
+func (s *ImageService) runAWSRepoProcess(repo *models.Repo) (*models.Repo, error) {
+	repo.Status = models.RepoStatusBuilding
+	result := db.DB.Save(&repo)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+		return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
+	}
+
+	repo, err := s.RepoBuilder.ImportRepo(repo)
+	if err != nil {
+		repo.Status = models.RepoStatusError
+		result := db.DB.Save(&repo)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+			return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
+		}
+	}
+
+	return repo, nil
+}
+
 // CreateRepoForImage creates the OSTree repo to host that image
 func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image) (*models.Repo, error) {
 	s.log.Info("Creating OSTree repo for image")
 	repo := &models.Repo{
-		Status: models.RepoStatusBuilding,
+		Status:     models.RepoStatusPending,
+		PulpStatus: models.RepoStatusPending,
 	}
 	tx := db.DB.Create(repo)
 	if tx.Error != nil {
@@ -879,23 +923,48 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	}
 	s.log.Debug("OSTree repo was saved to commit")
 
-	var repository *models.Repo
 	var err error
-	if feature.PulpIntegration.IsEnabled() {
-		s.log.Debug("Running Pulp repo process")
-		repository, err = s.RepoBuilder.StoreRepo(ctx, repo)
+	// Pulp repo process needs to run if AWS repo process is disabled (flag set true)
+	if feature.PulpIntegration.IsEnabled() || feature.PulpIntegrationDisableAWSRepoStore.IsEnabled() {
+		s.log.Info("Running Pulp repo process")
+		repo, err = s.runPulpRepoProcess(ctx, repo)
+		if err != nil {
+			return repo, err
+		}
 	} else {
-		s.log.Debug("Running AWS repo process")
-		repository, err = s.RepoBuilder.ImportRepo(repo)
-	}
-	if err != nil {
-		return nil, err
+		repo.PulpStatus = models.RepoStatusSkipped
 	}
 
-	parsedURL, _ := url.Parse(repository.URL)
-	s.log.WithField("url", parsedURL.Redacted()).Info("OSTree repo is ready")
+	// set feature flag true to only test Pulp (flag not created in Unleash and defaults to false)
+	if !feature.PulpIntegrationDisableAWSRepoStore.IsEnabled() {
+		s.log.Info("Running AWS repo process")
+		repo, err = s.runAWSRepoProcess(repo)
+		if err != nil {
+			return repo, err
+		}
+	} else {
+		repo.Status = models.RepoStatusSkipped
+		result := db.DB.Save(&repo)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+			return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
+		}
+	}
 
-	return repository, nil
+	parsedURL, _ := url.Parse(repo.URL)
+	parsedPulpURL, _ := url.Parse(repo.PulpURL)
+	s.log.WithFields(log.Fields{
+		"aws_url":     parsedURL.Redacted(),
+		"aws_status":  repo.Status,
+		"pulp_url":    parsedPulpURL.Redacted(),
+		"pulp_status": repo.PulpStatus,
+	}).Info("OSTree repo is ready")
+
+	if repo.Status != models.RepoStatusSuccess && repo.PulpStatus != models.RepoStatusSuccess {
+		return nil, goErrors.New("No repo has been created")
+	}
+
+	return repo, nil
 }
 
 // SetErrorStatusOnImage is a helper function that sets the error status on images

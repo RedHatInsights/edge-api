@@ -113,6 +113,12 @@ var SilentGormLogging = &Flag{Name: "edge-management.silent_gorm_logging", EnvVa
 // PulpIntegration covers the overall integration of pulp and deprecation of AWS storage
 var PulpIntegration = &Flag{Name: "edge-management.pulp_integration", EnvVar: "FEATURE_PULP_INTEGRATION"}
 
+// PulpIntegrationDisableAWSRepoStore disables the AWS repo store process for development
+var PulpIntegrationDisableAWSRepoStore = &Flag{Name: "edge-management.pulp_integration_disable_awsrepostore", EnvVar: "FEATURE_PULP_INTEGRATION_DISABLE_AWSREPOSTORE"}
+
+// PulpIntegrationUpdateViaPulp uses the Pulp Distribution URL for image and system updates
+var PulpIntegrationUpdateViaPulp = &Flag{Name: "edge-management.pulp_integration_updateviapulp", EnvVar: "FEATURE_PULP_INTEGRATION_UPDATEVIAPULP"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
