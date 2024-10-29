@@ -92,6 +92,7 @@ type EdgeConfig struct {
 	PulpS3SecretKey            string                    `json:"pulp_s3_secret_key,omitempty"`
 	PulpS3AccessKey            string                    `json:"pulp_s3_access_key,omitempty"`
 	PulpGuardSubjectDN         string                    `json:"pulp_guard_subject_dn,omitempty"`
+	Pulp                       Pulp                      `json:"pulp"`
 	CleanupBatchSize           int                       `json:"cleanup_batch_size,omitempty"`
 }
 
@@ -127,12 +128,70 @@ type loggingConfig struct {
 	Region          string `json:"region,omitempty"`
 }
 
+type Pulp struct {
+	URL                string
+	Username           string
+	Password           string
+	ContentUsername    string `mapstructure:"content_username,omitempty"`
+	ContentPassword    string `mapstructure:"content_password,omitempty"`
+	IdentityName       string `mapstructure:"identity_name,omitempty"`
+	ProxyURL           string `mapstructure:"proxy_url,omitempty"`
+	Oauth2URL          string `mapstructure:"oauth2_url,omitempty"`
+	Oauth2ClientID     string `mapstructure:"oauth2_client_id,omitempty"`
+	Oauth2ClientSecret string `mapstructure:"oauth2_client_secret,omitempty"`
+	S3BucketName       string `mapstructure:"s3_bucketname,omitempty"`
+	S3Region           string `mapstructure:"s3_region,omitempty"`
+	S3SecretKey        string `mapstructure:"s3_secretkey,omitempty"`
+	S3AccessKey        string `mapstructure:"s3_accesskey,omitempty"`
+	GuardSubjectDN     string `mapstructure:"guard_subject_dn,omitempty"`
+}
+
 var config *EdgeConfig
 var configMu = sync.Mutex{}
 
 // DevConfigFile is a wrapper for local dev kafka edgeConfig
 type DevConfigFile struct {
 	Kafka clowder.KafkaConfig
+}
+
+// just a forward moving baby step to a full config refactor (pulp now)
+func readPulpConfig() (Pulp, error) {
+	var pulp Pulp
+
+	options := viper.New()
+	options.SetEnvPrefix("pulp")
+	options.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	options.AutomaticEnv()
+
+	if err := options.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return pulp, err
+		}
+	}
+
+	options.SetDefault("url", "http://pulp-service:8080")
+	options.SetDefault("username", "edge-api-dev")
+	options.SetDefault("password", "")
+	options.SetDefault("content_username", "edge-content-dev")
+	options.SetDefault("content_password", "")
+	options.SetDefault("guard_subject_dn", "")
+	options.SetDefault("identity_name", "edge-api-dev")
+	options.SetDefault("proxy_url", "")
+	options.SetDefault("oauth2_url", "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
+	options.SetDefault("oauth2_client_id", "")
+	options.SetDefault("oauth2_client_secret", "")
+	options.SetDefault("s3_bucketname", "")
+	options.SetDefault("s3_region", "DummyRegion")
+	options.SetDefault("s3_secretkey", "")
+	options.SetDefault("s3_accesskey", "")
+	options.SetDefault("guard_subject_dn", "")
+
+	err := options.Unmarshal(&pulp)
+	if err != nil {
+		return pulp, fmt.Errorf("unable to unmarshal config to struct")
+	}
+
+	return pulp, nil
 }
 
 // CreateEdgeAPIConfig create a new configuration for Edge API
@@ -176,21 +235,6 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("DeleteFilesRetryDelay", 5)
 	options.SetDefault("RBAC_BASE_URL", "http://rbac-service:8080")
 	options.SetDefault("RbacTimeout", 30)
-	options.SetDefault("PULP_URL", "http://pulp-service:8080")
-	options.SetDefault("PULP_USERNAME", "edge-api-dev")
-	options.SetDefault("PULP_PASSWORD", "")
-	options.SetDefault("PULP_CONTENT_USERNAME", "edge-content-dev")
-	options.SetDefault("PULP_CONTENT_PASSWORD", "")
-	options.SetDefault("PulpIdentityName", "edge-api-dev")
-	options.SetDefault("PulpProxyURL", "")
-	options.SetDefault("PulpOauth2URL", "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
-	options.SetDefault("PulpOauth2ClientID", "")
-	options.SetDefault("PulpOauth2ClientSecret", "")
-	options.SetDefault("PULP_S3_BUCKETNAME", "")
-	options.SetDefault("PULP_S3_REGION", "DummyRegion")
-	options.SetDefault("PULP_S3_SECRETKEY", "")
-	options.SetDefault("PULP_S3_ACCESSKEY", "")
-	options.SetDefault("PULP_GUARD_SUBJECT_DN", "")
 	options.SetDefault("CleanupBatchSize", "500")
 	options.AutomaticEnv()
 
@@ -233,6 +277,15 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("TenantTranslatorHost", os.Getenv("TENANT_TRANSLATOR_HOST"))
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
 
+	// this sets up Pulp config to be the first refactored to better leverage Viper
+	// 	ALL of config should be refactored to simplify and get rid of the Get section above
+	pulpConfig, err := readPulpConfig()
+	if err != nil {
+		log.Error("Error reading Pulp config")
+		// don't return since we haven't switched over to Pulp yet
+	}
+
+	// FIXME: move to native Viper, structs, and dot notation
 	edgeConfig := &EdgeConfig{
 		Hostname:          options.GetString("Hostname"),
 		Auth:              options.GetBool("Auth"),
@@ -287,23 +340,27 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		RbacTimeout:                options.GetUint("RbacTimeout"),
 		SubscriptionServerURL:      options.GetString("SUBSCRIPTION_SERVER_URL"),
 		SubscriptionBaseUrl:        options.GetString("SUBSCRIPTION_BASE_URL"),
-		PulpURL:                    options.GetString("PULP_URL"),
-		PulpUsername:               options.GetString("PULP_USERNAME"),
-		PulpPassword:               options.GetString("PULP_PASSWORD"),
-		PulpContentUsername:        options.GetString("PULP_CONTENT_USERNAME"),
-		PulpContentPassword:        options.GetString("PULP_CONTENT_PASSWORD"),
-		PulpIdentityName:           options.GetString("PulpIdentityName"),
-		PulpProxyURL:               options.GetString("PulpProxyURL"),
-		PulpOauth2URL:              options.GetString("PulpOauth2URL"),
-		PulpOauth2ClientID:         options.GetString("PulpOauth2ClientID"),
-		PulpOauth2ClientSecret:     options.GetString("PulpOauth2ClientSecret"),
-		PulpS3BucketName:           options.GetString("PULP_S3_BUCKETNAME"),
-		PulpS3Region:               options.GetString("PULP_S3_REGION"),
-		PulpS3SecretKey:            options.GetString("PULP_S3_SECRETKEY"),
-		PulpS3AccessKey:            options.GetString("PULP_S3_ACCESSKEY"),
-		PulpGuardSubjectDN:         options.GetString("PULP_GUARD_SUBJECT_DN"),
+		PulpURL:                    pulpConfig.URL, // these pulp entries are temporary for backward compatibility
+		PulpUsername:               pulpConfig.Username,
+		PulpPassword:               pulpConfig.Password,
+		PulpContentUsername:        pulpConfig.ContentUsername,
+		PulpContentPassword:        pulpConfig.ContentPassword,
+		PulpIdentityName:           pulpConfig.IdentityName,
+		PulpProxyURL:               pulpConfig.ProxyURL,
+		PulpOauth2URL:              pulpConfig.Oauth2URL,
+		PulpOauth2ClientID:         pulpConfig.Oauth2ClientID,
+		PulpOauth2ClientSecret:     pulpConfig.Oauth2ClientSecret,
+		PulpS3BucketName:           pulpConfig.S3BucketName,
+		PulpS3Region:               pulpConfig.S3Region,
+		PulpS3SecretKey:            pulpConfig.S3SecretKey,
+		PulpS3AccessKey:            pulpConfig.S3AccessKey,
+		PulpGuardSubjectDN:         pulpConfig.GuardSubjectDN,
 		CleanupBatchSize:           options.GetInt("CleanupBatchSize"),
 	}
+
+	// this allows dot notation to be used before a full config refactor
+	edgeConfig.Pulp = pulpConfig
+
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
 	}
