@@ -14,7 +14,7 @@ The **edge-api** project is an API server for fleet edge management capabilities
 
 ### Project Architecture
 
-Below you can see where the `edge-api` application sits in respect to the interaction with the user and the device at the edge to be managed.
+Below you can see where the `edge-api` application sits in respect to the interaction with the user and the device at the edge to be managed
 
 ```text
                                           ┌──────────┐
