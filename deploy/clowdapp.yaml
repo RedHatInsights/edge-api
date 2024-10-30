@@ -155,13 +155,6 @@ objects:
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
-        - name: UNLEASH_URL
-          value: ${UNLEASH_URL}
-        - name: UNLEASH_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: ${UNLEASH_SECRET_NAME}
-              key: CLIENT_ACCESS_TOKEN
         - name: TENANT_TRANSLATOR_HOST
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
@@ -261,13 +254,6 @@ objects:
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
-        - name: UNLEASH_URL
-          value: ${UNLEASH_URL}
-        - name: UNLEASH_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: ${UNLEASH_SECRET_NAME}
-              key: CLIENT_ACCESS_TOKEN
         - name: TENANT_TRANSLATOR_HOST
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
@@ -336,13 +322,6 @@ objects:
               value: ${UPLOADWORKERS}
             - name: LOG_LEVEL
               value: ${LOG_LEVEL}
-            - name: UNLEASH_URL
-              value: ${UNLEASH_URL}
-            - name: UNLEASH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: ${UNLEASH_SECRET_NAME}
-                  key: CLIENT_ACCESS_TOKEN
             - name: TENANT_TRANSLATOR_HOST
               value: ${TENANT_TRANSLATOR_HOST}
             - name: TENANT_TRANSLATOR_PORT
@@ -523,12 +502,6 @@ parameters:
   name: LOG_LEVEL
   required: false
   value: "DEBUG"
-- description: Unleash API url
-  name: UNLEASH_URL
-  value: ''
-- description: Unleash secret name
-  name: UNLEASH_SECRET_NAME
-  value: unleash-ephemeral
 - description: Host for the EAN to OrgId translator service.
   name: TENANT_TRANSLATOR_HOST
   required: false

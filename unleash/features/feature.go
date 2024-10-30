@@ -124,21 +124,22 @@ var PulpIntegrationUpdateViaPulp = &Flag{Name: "edge-management.pulp_integration
 
 // CheckFeature checks to see if a given feature is available
 func CheckFeature(feature string, options ...unleash.FeatureOption) bool {
-	cfg := config.Get()
-
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		if len(options) == 0 {
-			options = append(options, unleash.WithContext(unleashCTX.Context{}))
-		}
-		return unleash.IsEnabled(feature, options...)
+	if !config.FeatureFlagsConfigured() {
+		return false
 	}
 
-	return false
+	if len(options) == 0 {
+		options = append(options, unleash.WithContext(unleashCTX.Context{}))
+	}
+	return unleash.IsEnabled(feature, options...)
 }
 
 // CheckFeature checks to see if a given feature is available with context
 func CheckFeatureCtx(ctx context.Context, feature string, options ...unleash.FeatureOption) bool {
-	cfg := config.Get()
+	if !config.FeatureFlagsConfigured() {
+		return false
+	}
+
 	uctx := unleashCTX.Context{}
 	orgID := identity.GetIdentity(ctx).Identity.OrgID
 	if orgID != "" {
@@ -150,12 +151,8 @@ func CheckFeatureCtx(ctx context.Context, feature string, options ...unleash.Fea
 		}
 	}
 
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		options = append(options, unleash.WithContext(uctx))
-		return unleash.IsEnabled(feature, options...)
-	}
-
-	return false
+	options = append(options, unleash.WithContext(uctx))
+	return unleash.IsEnabled(feature, options...)
 }
 
 // IsEnabledLocal returns a bool directly from the environment. Use before Unleash is init'd

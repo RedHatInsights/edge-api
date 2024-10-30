@@ -183,16 +183,6 @@ func gracefulTermination(server *http.Server, serviceName string) {
 	log.Infof("%s service shutdown complete", serviceName)
 }
 
-func featureFlagsConfigPresent() bool {
-	conf := config.Get()
-	return conf.FeatureFlagsURL != ""
-}
-
-func featureFlagsServiceUnleash() bool {
-	conf := config.Get()
-	return conf.FeatureFlagsService == "unleash"
-}
-
 func main() {
 	ctx := context.Background()
 	// this only catches interrupts for main
@@ -246,7 +236,7 @@ func main() {
 
 	config.LogConfigAtStartup(cfg)
 
-	if featureFlagsConfigPresent() {
+	if config.FeatureFlagsConfigured() {
 		err := unleash.Initialize(
 			unleash.WithListener(&edgeunleash.EdgeListener{}),
 			unleash.WithAppName("edge-api"),

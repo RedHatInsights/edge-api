@@ -56,10 +56,8 @@ type EdgeConfig struct {
 	Local                      bool                      `json:"local,omitempty"`
 	Dev                        bool                      `json:"dev,omitempty"`
 	UnleashURL                 string                    `json:"unleash_url,omitempty"`
-	FeatureFlagsEnvironment    string                    `json:"featureflags_environment,omitempty"`
 	FeatureFlagsURL            string                    `json:"featureflags_url,omitempty"`
 	FeatureFlagsAPIToken       string                    `json:"featureflags_api_token,omitempty"`
-	FeatureFlagsService        string                    `json:"featureflags_service,omitempty"`
 	ContentSourcesURL          string                    `json:"content_sources_url,omitempty"`
 	TenantTranslatorHost       string                    `json:"tenant_translator_host,omitempty"`
 	TenantTranslatorPort       string                    `json:"tenant_translator_port,omitempty"`
@@ -152,6 +150,11 @@ var configMu = sync.Mutex{}
 // DevConfigFile is a wrapper for local dev kafka edgeConfig
 type DevConfigFile struct {
 	Kafka clowder.KafkaConfig
+}
+
+func FeatureFlagsConfigured() bool {
+	conf := Get()
+	return conf.FeatureFlagsURL != ""
 }
 
 // just a forward moving baby step to a full config refactor (pulp now)
@@ -260,19 +263,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
 	}
-	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
 	options.SetDefault("GpgVerify", "false")
-	if os.Getenv("SOURCES_ENV") == "prod" {
-		options.SetDefault("FeatureFlagsEnvironment", "production")
-	} else {
-		options.SetDefault("FeatureFlagsEnvironment", "development")
-	}
-
-	// check to see if you are running in ephemeral, the unleash server in ephemeral is empty
-	if strings.Contains(options.GetString("FeatureFlagsUrl"), "ephemeral") {
-		options.SetDefault("FeatureFlagsEnvironment", "ephemeral")
-	}
 
 	options.SetDefault("TenantTranslatorHost", os.Getenv("TENANT_TRANSLATOR_HOST"))
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
@@ -319,10 +311,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		Local:                      options.GetBool("Local"),
 		Dev:                        options.GetBool("Dev"),
 		UnleashURL:                 options.GetString("FeatureFlagsUrl"),
-		FeatureFlagsEnvironment:    options.GetString("FeatureFlagsEnvironment"),
 		FeatureFlagsURL:            options.GetString("FeatureFlagsUrl"),
 		FeatureFlagsAPIToken:       options.GetString("FeatureFlagsAPIToken"),
-		FeatureFlagsService:        options.GetString("FeatureFlagsService"),
 		TenantTranslatorHost:       options.GetString("TenantTranslatorHost"),
 		ContentSourcesURL:          options.GetString("CONTENT_SOURCES_URL"),
 		TenantTranslatorPort:       options.GetString("TenantTranslatorPort"),
