@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/ptr"
 	"github.com/sirupsen/logrus"
 )
@@ -65,12 +67,44 @@ func (ps *PulpService) CompositeGuardReadByOrgID(ctx context.Context, orgID stri
 	return ps.CompositeGuardRead(ctx, id)
 }
 
+func contentGuardHrefsAreEqual(cghrefa, cghrefb []string) bool {
+	// compare how many hrefs are in the content guard versus expected
+	logrus.Debug("Comparing Content Guard hrefs")
+	if len(cghrefa) != len(cghrefb) {
+		logrus.WithFields(logrus.Fields{
+			"href_count_1": len(cghrefa),
+			"href_count_2": len(cghrefb),
+		}).Warning("Content Guards do not have the same number of hrefs")
+
+		return false
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"href_count_1": len(cghrefa),
+		"href_count_2": len(cghrefb),
+	}).Debug("Content Guards have the same number of hrefs")
+
+	// compare content guard hrefs (actual vs. expected)
+	for i := range cghrefa {
+		if !slices.Contains(cghrefb, cghrefa[i]) {
+			logrus.WithField("href_mismatch", cghrefa[i]).Warning("Content Guard href mismatch")
+
+			return false
+		}
+	}
+
+	logrus.Debug("Content Guard has the expected hrefs")
+
+	return true
+}
+
 // CompositeGuardEnsure ensures that the composite guard is created and returns it. The method is idempotent.
-func (ps *PulpService) CompositeGuardEnsure(ctx context.Context, orgID, headerHref, rbacHref string) (*CompositeContentGuardResponse, error) {
+func (ps *PulpService) CompositeGuardEnsure(ctx context.Context, orgID string, pulpGuardHrefs []string) (*CompositeContentGuardResponse, error) {
 	cg, err := ps.CompositeGuardReadByOrgID(ctx, compositeGuardName(orgID))
 	// nolint: gocritic
 	if errors.Is(err, ErrRecordNotFound) {
-		cg, err = ps.CompositeGuardCreate(ctx, orgID, headerHref, rbacHref)
+		logrus.Warning("No composite guard found. Creating one.")
+		cg, err = ps.CompositeGuardCreate(ctx, orgID, pulpGuardHrefs...)
 		if err != nil {
 			return nil, err
 		}
@@ -83,14 +117,15 @@ func (ps *PulpService) CompositeGuardEnsure(ctx context.Context, orgID, headerHr
 	}
 
 	gs := ptr.FromOrEmpty(cg.Guards)
-	if !(len(gs) == 2 && (gs[0] != headerHref && gs[1] != rbacHref) || (gs[1] != headerHref && gs[0] != rbacHref)) {
+	if !contentGuardHrefsAreEqual(gs, pulpGuardHrefs) {
 		logrus.WithContext(ctx).Warnf("unexpected Composite Content Guard: %v, deleting it", gs)
 		err = ps.CompositeGuardDelete(ctx, ScanUUID(cg.PulpHref))
 		if err != nil {
 			return nil, err
 		}
 
-		cg, err = ps.CompositeGuardCreate(ctx, orgID, headerHref, rbacHref)
+		logrus.Warning("Matching composite guard not found. Creating one.")
+		cg, err = ps.CompositeGuardCreate(ctx, orgID, pulpGuardHrefs...)
 		if err != nil {
 			return nil, err
 		}
@@ -102,17 +137,35 @@ func (ps *PulpService) CompositeGuardEnsure(ctx context.Context, orgID, headerHr
 // that the composite guard is not created or the guards are not the same as the ones provided, it will delete it
 // and recreate it. This method is idempotent and will not create the guards if they already exist.
 func (ps *PulpService) ContentGuardEnsure(ctx context.Context, orgID string) (*CompositeContentGuardResponse, error) {
+	var contentGuardHrefs []string
+	cfg := config.Get()
+
+	logrus.WithContext(ctx).Debug("Creating header content guard")
 	hcg, err := ps.HeaderGuardEnsure(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
+	contentGuardHrefs = append(contentGuardHrefs, *hcg.PulpHref)
 
-	rcg, err := ps.RbacGuardEnsure(ctx)
+	// Turnpike Content Guard is primarily for Image Builder to Pulp calls using the URL configured in PULP_CONTENT_URL
+	logrus.WithContext(ctx).Debug("Creating turnpike content guard")
+	tpcg, err := ps.TurnpikeGuardEnsure(ctx)
 	if err != nil {
 		return nil, err
 	}
+	contentGuardHrefs = append(contentGuardHrefs, *tpcg.PulpHref)
 
-	ccg, err := ps.CompositeGuardEnsure(ctx, orgID, *hcg.PulpHref, *rcg.PulpHref)
+	// to create an RBAC Content Guard, add PULP_CONTENT_USERNAME and PULP_CONTENT_PASSWORD to environment
+	if cfg.Pulp.ContentUsername != "" {
+		logrus.WithContext(ctx).Debug("Creating RBAC content guard")
+		rcg, err := ps.RbacGuardEnsure(ctx)
+		if err != nil {
+			return nil, err
+		}
+		contentGuardHrefs = append(contentGuardHrefs, *rcg.PulpHref)
+	}
+
+	ccg, err := ps.CompositeGuardEnsure(ctx, orgID, contentGuardHrefs)
 	if err != nil {
 		return nil, err
 	}

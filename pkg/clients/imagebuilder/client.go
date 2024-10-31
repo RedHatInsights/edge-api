@@ -127,6 +127,7 @@ type ImageRequest struct {
 
 // ComposeRequest is the request to Compose one or more Images
 type ComposeRequest struct {
+	Name           string          `json:"image_name"`
 	Customizations *Customizations `json:"customizations"`
 	Distribution   string          `json:"distribution"`
 	ImageRequests  []ImageRequest  `json:"image_requests"`
@@ -224,12 +225,15 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 		return nil, err
 	}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
+	reqURL := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
+
+	parsedURL, _ := url.Parse(reqURL)
 	c.log.WithFields(log.Fields{
-		"url":     url,
+		"url":     parsedURL.Redacted(),
 		"payload": payloadBuf.String(),
 	}).Debug("Image Builder Compose Request Started")
-	req, _ := http.NewRequest("POST", url, payloadBuf)
+
+	req, _ := http.NewRequest("POST", reqURL, payloadBuf)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
@@ -267,11 +271,14 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
+	c.log.Debug("COMPOSING COMMIT")
+
 	payloadRepos, err := c.GetImageThirdPartyRepos(image)
 	if err != nil {
 		return nil, errors.New("error getting information on third Party repository")
 	}
 	req := &ComposeRequest{
+		Name: image.Name,
 		Customizations: &Customizations{
 			Packages:            image.GetALLPackagesList(),
 			PayloadRepositories: &payloadRepos,
@@ -303,6 +310,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		}
 
 	}
+
 	if image.Commit.OSTreeRef != "" {
 		if req.ImageRequests[0].Ostree == nil {
 			req.ImageRequests[0].Ostree = &OSTree{}
@@ -338,6 +346,8 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 
 // ComposeInstaller composes an Installer on ImageBuilder
 func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
+	c.log.Debug("COMPOSING INSTALLER")
+
 	pkgs := make([]string, 0)
 	var repoURL string
 	var rhsm bool
@@ -347,6 +357,12 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	} else {
 		repoURL = image.Commit.Repo.URL
 		rhsm = false
+	}
+
+	if feature.PulpIntegration.IsEnabled() && image.Commit.Repo.PulpURL != "" {
+		repoURL = image.Commit.Repo.PulpURL
+		parsedURL, _ := url.Parse(repoURL)
+		c.log.WithField("redacted_url", parsedURL.Redacted()).Debug("Using Pulp repo URL for ISO installer request")
 	}
 
 	users := make([]User, 0)
