@@ -57,8 +57,7 @@ COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-cleanup /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
-RUN microdnf install -y coreutils-single glibc-minimal-langpack \
-     isomd5sum file ostree && microdnf clean all
+RUN microdnf install -y coreutils-single glibc-minimal-langpack ostree && microdnf clean all
 
 # template to playbook dispatcher
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
