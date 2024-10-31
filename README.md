@@ -80,7 +80,6 @@ Below you can see where the `edge-api` application sits in respect to the intera
 
 Development of this project utilizes several tools listed below:
 
-- [Git](https://git-scm.com/)
 - [Golang](https://golang.org/)
 - [Python](https://www.python.org/)
 - [minikube](https://minikube.sigs.k8s.io/docs/)
@@ -88,10 +87,6 @@ Development of this project utilizes several tools listed below:
 - [Bonfire](https://github.com/RedHatInsights/bonfire)
 - [Podman](https://podman.io/) / [Docker](https://www.docker.com/)
 - [OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html)
-
-### Git
-
-[Git](https://git-scm.com/) is a free and open source distributed version control system designed to handle everything from small to very large projects with speed and efficiency. You can install Git on your system if it's not already available using the following [documentation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 ### Golang
 
