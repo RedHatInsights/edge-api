@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/config"
@@ -48,8 +47,6 @@ func PulpRepoStore(ctx context.Context, orgID string, sourceRepoID uint, sourceU
 		"dist_base_url": distBaseURL,
 		"pulp_href":     pulpHref,
 	}).Info("Pulp OSTree Repo created with Content Guard and Distribution")
-
-	// TODO: check for an existing OSTree repo for image commit versions > 1 and add the commit for updates
 
 	repoURL, err := ostreeRepoImport(ctx, pserv, pulpHref, repoName, distBaseURL, fileRepoArtifact)
 	if err != nil {
@@ -142,8 +139,7 @@ func createOSTreeRepository(ctx context.Context, pulpService *pulp.PulpService, 
 	cgPulpHref := *cg.PulpHref
 	log.WithContext(ctx).WithFields(log.Fields{
 		"contentguard_href": cgPulpHref,
-		"contentguard_0":    (*cg.Guards)[0],
-		"contentguard_1":    (*cg.Guards)[1],
+		"content_guards":    *cg.Guards,
 	}).Info("Pulp Content Guard found or created")
 
 	distribution, err := pulpService.DistributionsCreate(ctx, name, name, *pulpRepo.PulpHref, cgPulpHref)
@@ -153,7 +149,7 @@ func createOSTreeRepository(ctx context.Context, pulpService *pulp.PulpService, 
 	log.WithContext(ctx).WithFields(log.Fields{
 		"name":      distribution.Name,
 		"base_path": distribution.BasePath,
-		"base_url":  distribution.BaseUrl,
+		"base_url":  *distribution.BaseUrl,
 		"pulp_href": distribution.PulpHref,
 	}).Info("Pulp Distribution created")
 
@@ -161,32 +157,24 @@ func createOSTreeRepository(ctx context.Context, pulpService *pulp.PulpService, 
 }
 
 // returns the complete distribution URL
-func distributionURL(ctx context.Context, distBaseURL string, domain string, repoName string) (string, error) {
+func distributionURL(ctx context.Context, domain string, repoName string) (string, error) {
 	cfg := config.Get()
+	var distURL string
+	distURL = fmt.Sprintf("%s/api/pulp-content/%s/%s", cfg.PulpContentURL, domain, repoName)
 
-	prodDistURL, err := url.Parse(distBaseURL)
-	if err != nil {
-		return "", errors.New("Unable to set user:password for Pulp distribution URL")
-	}
-	prodDistURL.User = url.UserPassword(cfg.PulpContentUsername, cfg.PulpContentPassword)
-	distURL := prodDistURL.String()
-
-	// temporarily handle stage URLs so Image Builder worker can get to stage Pulp
-	if strings.Contains(distBaseURL, "stage") {
-		stagePulpURL := fmt.Sprintf("%s/api/pulp-content/%s/%s", cfg.PulpURL, domain, repoName)
-		stageDistURL, err := url.Parse(stagePulpURL)
+	if cfg.Pulp.ContentUsername != "" {
+		rbacDistURL, err := url.Parse(distURL)
 		if err != nil {
 			return "", errors.New("Unable to set user:password for Pulp distribution URL")
 		}
-		stageDistURL.User = url.UserPassword(cfg.PulpContentUsername, cfg.PulpContentPassword)
-
-		distURL = stageDistURL.String()
+		rbacDistURL.User = url.UserPassword(cfg.PulpContentUsername, cfg.PulpContentPassword)
+		distURL = rbacDistURL.String()
 	}
 
 	parsedURL, _ := url.Parse(distURL)
 	log.WithContext(ctx).WithField("distribution_url", parsedURL.Redacted()).Debug("Distribution URL retrieved")
 
-	return distURL, err
+	return distURL, nil
 }
 
 // imports an image builder tarfile into a Pulp file repo
@@ -204,6 +192,8 @@ func fileRepoImport(ctx context.Context, pulpService *pulp.PulpService, sourceUR
 		return "", "", err
 	}
 
+	log.WithContext(ctx).WithFields(log.Fields{"artifact_href": artifact, "version_href": version}).Debug("Artifact and version href")
+
 	return artifact, version, nil
 }
 
@@ -211,14 +201,19 @@ func fileRepoImport(ctx context.Context, pulpService *pulp.PulpService, sourceUR
 func ostreeRepoImport(ctx context.Context, pulpService *pulp.PulpService, pulpHref string, pulpRepoName string,
 	distBaseURL string, fileRepoArtifact string) (string, error) {
 
-	log.WithContext(ctx).Debug("Starting tarfile import into Pulp OSTree repository")
+	log.WithContext(ctx).WithFields(log.Fields{
+		"pulp_href":            pulp.ScanUUID(&pulpHref),
+		"pulp_reponame":        pulpRepoName,
+		"distribution_baseurl": distBaseURL,
+		"artifact_href":        fileRepoArtifact,
+	}).Debug("Starting tarfile import into Pulp OSTree repository")
 	repoImported, err := pulpService.RepositoriesImport(ctx, pulp.ScanUUID(&pulpHref), "repo", fileRepoArtifact)
 	if err != nil {
 		return "", err
 	}
-	log.WithContext(ctx).Info("Repository imported", *repoImported.PulpHref)
+	log.WithContext(ctx).WithField("repo_href", *repoImported.PulpHref).Info("Repository imported")
 
-	repoURL, err := distributionURL(ctx, distBaseURL, pulpService.Domain(), pulpRepoName)
+	repoURL, err := distributionURL(ctx, pulpService.Domain(), pulpRepoName)
 	if err != nil {
 		log.WithContext(ctx).WithField("error", err.Error()).Error("Error getting distibution URL for Pulp repo")
 		return "", err

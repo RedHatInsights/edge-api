@@ -90,7 +90,7 @@ func TestKafkaBroker(t *testing.T) {
 
 	}(originalConfig, originalClowderEnvConfig, originalClowderLoadedConfig, originalClowderObjectBuckets, originalEDGETarBallsBucket)
 
-	defer cleanup()
+	defer Cleanup()
 
 	err := os.Setenv("ACG_CONFIG", "need some value only, as the config path is not needed here")
 	assert.NoError(t, err)
@@ -170,9 +170,9 @@ func TestKafkaBroker(t *testing.T) {
 			clowder.LoadedConfig = testCase.clowderConfig
 			clowder.KafkaServers = testCase.KafkaServers
 			// init the configuration
-			cleanup()
+			Cleanup()
 			Init()
-			defer cleanup()
+			defer Cleanup()
 			assert.Equal(t, config.KafkaBroker, testCase.ExpectedKafkaBroker)
 			assert.Equal(t, config.KafkaServers, testCase.ExpectedKafkaServers)
 			if testCase.ExpectedKafkaBroker != nil {
