@@ -6,7 +6,7 @@ require (
 	github.com/Unleash/unleash-client-go/v4 v4.1.4
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/bxcodec/faker/v3 v3.8.1
-	github.com/cavaliercoder/grab v2.0.0+incompatible
+	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/getsentry/sentry-go v0.29.1
@@ -15,7 +15,7 @@ require (
 	github.com/go-openapi/runtime v0.28.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
-	github.com/knqyf263/go-rpm-version v0.0.0-20220614171824-631e686d1075
+	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
 	github.com/lib/pq v1.10.9
 	github.com/magiconair/properties v1.8.7
 	github.com/oapi-codegen/runtime v1.1.1
