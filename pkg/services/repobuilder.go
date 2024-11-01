@@ -19,7 +19,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/repostore"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/cavaliercoder/grab"
+	"github.com/cavaliergopher/grab/v3"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
