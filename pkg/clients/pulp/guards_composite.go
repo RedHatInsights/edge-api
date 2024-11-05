@@ -14,11 +14,11 @@ func compositeGuardName(orgID string) string {
 	return "EDGE_COMP_ORGID=" + orgID
 }
 
-// CompositeGuardCreate creates a new composite guard with the given orgID, headerHref, and rbacHref.
-func (ps *PulpService) CompositeGuardCreate(ctx context.Context, orgID, headerHref, rbacHref string) (*CompositeContentGuardResponse, error) {
+// CompositeGuardCreate creates a new composite guard with the given orgID and one or more Pulp guard hrefs.
+func (ps *PulpService) CompositeGuardCreate(ctx context.Context, orgID string, hrefs ...string) (*CompositeContentGuardResponse, error) {
 	req := ContentguardsCoreCompositeCreateJSONRequestBody{
 		Name:        compositeGuardName(orgID),
-		Guards:      ptr.To([]string{headerHref, rbacHref}),
+		Guards:      ptr.To(hrefs),
 		Description: ptr.To("EDGE"),
 	}
 	resp, err := ps.cwr.ContentguardsCoreCompositeCreateWithResponse(ctx, ps.dom, req, addAuthenticationHeader)
