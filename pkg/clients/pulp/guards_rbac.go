@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/ptr"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/exp/slices"
 )
 
 var guardRbacName = "ROLE=readonly"
