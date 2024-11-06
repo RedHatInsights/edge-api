@@ -214,80 +214,80 @@ vet:
 	go install -a
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
-pkg/services/mock_services/downloader.go: pkg/services/files/downloader.go
+pkg/services/mock_services/downloader.go: pkg/services/files/downloader.go go.mod
 	mockgen -source=$< -destination=$@ -package=mock_services
 
-pkg/services/mock_services/updates.go: pkg/services/updates.go
+pkg/services/mock_services/updates.go: pkg/services/updates.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/thirdpartyrepo.go: pkg/services/thirdpartyrepo.go
+pkg/services/mock_services/thirdpartyrepo.go: pkg/services/thirdpartyrepo.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/repobuilder.go: pkg/services/repobuilder.go
+pkg/services/mock_services/repobuilder.go: pkg/services/repobuilder.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/imagesets.go: pkg/services/imagesets.go
+pkg/services/mock_services/imagesets.go: pkg/services/imagesets.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/images.go: pkg/services/images.go
+pkg/services/mock_services/images.go: pkg/services/images.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/devices.go: pkg/services/devices.go
+pkg/services/mock_services/devices.go: pkg/services/devices.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/commits.go: pkg/services/commits.go
+pkg/services/mock_services/commits.go: pkg/services/commits.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/repo.go: pkg/services/repo.go
+pkg/services/mock_services/repo.go: pkg/services/repo.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_files/uploader.go: pkg/services/files/uploader.go
+pkg/services/mock_files/uploader.go: pkg/services/files/uploader.go go.mod
 	mockgen -source=$< -destination=$@
 
 # is a copy of the above, before this make target it was a manually created mess
-pkg/services/mock_services/uploader.go: pkg/services/files/uploader.go
+pkg/services/mock_services/uploader.go: pkg/services/files/uploader.go go.mod
 	mockgen -source=$< -destination=$@ -package=mock_services
 
-pkg/services/mock_services/files.go: pkg/services/files.go
+pkg/services/mock_services/files.go: pkg/services/files.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_files/s3.go: pkg/services/files/s3.go
+pkg/services/mock_files/s3.go: pkg/services/files/s3.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/devicegroups.go: pkg/services/devicegroups.go
+pkg/services/mock_services/devicegroups.go: pkg/services/devicegroups.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_files/extrator.go: pkg/services/files/extractor.go
+pkg/services/mock_files/extrator.go: pkg/services/files/extractor.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/common/kafka/mock_kafka/mock_topics.go: pkg/common/kafka/topics.go
+pkg/common/kafka/mock_kafka/mock_topics.go: pkg/common/kafka/topics.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/common/kafka/mock_kafka/mock_producer.go: pkg/common/kafka/producer.go
+pkg/common/kafka/mock_kafka/mock_producer.go: pkg/common/kafka/producer.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/common/kafka/mock_kafka/mock_kafkaconfigmap.go: pkg/common/kafka/kafkaconfigmap.go
+pkg/common/kafka/mock_kafka/mock_kafkaconfigmap.go: pkg/common/kafka/kafkaconfigmap.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/common/kafka/mock_kafka/mock_consumer.go: pkg/common/kafka/consumer.go
+pkg/common/kafka/mock_kafka/mock_consumer.go: pkg/common/kafka/consumer.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/clients/repositories/mock_repositories/client.go: pkg/clients/repositories/client.go
+pkg/clients/repositories/mock_repositories/client.go: pkg/clients/repositories/client.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/clients/playbookdispatcher/mock_playbookdispatcher/playbookdispatcher.go: pkg/clients/playbookdispatcher/client.go
+pkg/clients/playbookdispatcher/mock_playbookdispatcher/playbookdispatcher.go: pkg/clients/playbookdispatcher/client.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/clients/rbac/mock_rbac/client.go: pkg/clients/rbac/client.go
+pkg/clients/rbac/mock_rbac/client.go: pkg/clients/rbac/client.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/clients/inventory/mock_inventory/inventory.go: pkg/clients/inventory/client.go
+pkg/clients/inventory/mock_inventory/inventory.go: pkg/clients/inventory/client.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/clients/inventorygroups/mock_inventorygroups/client.go: pkg/clients/inventorygroups/client.go
+pkg/clients/inventorygroups/mock_inventorygroups/client.go: pkg/clients/inventorygroups/client.go go.mod
 	mockgen -source=$< -destination=$@
 
-pkg/clients/imagebuilder/mock_imagebuilder/client.go: pkg/clients/imagebuilder/client.go
+pkg/clients/imagebuilder/mock_imagebuilder/client.go: pkg/clients/imagebuilder/client.go go.mod
 	mockgen -source=$< -destination=$@
 
 mockgen: \
