@@ -1,4 +1,3 @@
----
 #
 # Shared keys
 shared:
@@ -11,12 +10,18 @@ queue_rules:
   #
   # Add this PR to the merge queue
   - name: edge-api
-    conditions:
+    queue_conditions:
+      - author~=^dependabot(|-preview)\[bot\]$
+      - and: *common-merge-criteria
+      - check-success=Lint
+    merge_conditions:
       - base=main
       - and: *common-merge-criteria
 #
 # Pull request rules https://docs.mergify.com/configuration/#pull-request-rules
 # N.B. Evaluated in order defined
+    merge_method: merge
+
 pull_request_rules:
   #
   # Remove stale approvals or changes request
@@ -31,17 +36,6 @@ pull_request_rules:
         when: synchronize
   #
   # Dependabot PR merge rule
-  - name: Automatic merge for Dependabot pull requests
-    conditions:
-      - author~=^dependabot(|-preview)\[bot\]$
-      - and: *common-merge-criteria
-      - check-success=Lint
-    actions:
-      queue:
-        name: edge-api
-        method: merge
-  #
-  # If PR check fails, request resolution (prevent stalling the merge queue)
   - name: Request PR check re-run
     conditions:
       - and:
@@ -55,7 +49,8 @@ pull_request_rules:
               - -check-success=Lint
     actions:
       comment:
-        message: "This pull request needs all pr-checks to run successfully. Could you fix it @{{author}}? 🙏"
+        message: "This pull request needs all pr-checks to run successfully. Could
+          you fix it @{{author}}? 🙏"
       label:
         add:
           - invalid
@@ -67,7 +62,8 @@ pull_request_rules:
       - conflict
     actions:
       comment:
-        message: "This pull request is now in conflicts. Could you fix it @{{author}}? 🙏"
+        message: "This pull request is now in conflicts. Could you fix it @{{author}}?
+          🙏"
       label:
         add:
           - conflict
@@ -189,12 +185,18 @@ pull_request_rules:
   # Detect when PR is ready and add label
   - name: add ready label
     conditions:
-      - body~=(?m)^- \[[xX]\] I have commented my code, particularly in hard-to-understand areas
+      - body~=(?m)^- \[[xX]\] I have commented my code, particularly in hard-to-understand
+        areas
       - body~=(?m)^- \[[xX]\] I have made corresponding changes to the documentation
-      - body~=(?m)^- \[[xX]\] I have added tests that prove my fix is effective or that my feature works
+      - body~=(?m)^- \[[xX]\] I have added tests that prove my fix is effective or
+        that my feature works
       - body~=(?m)^- \[[xX]\] New and existing unit tests pass locally with my changes
       - body~=(?m)^- \[[xX]\] I run `make pre-commit` to check fmt\/vet\/lint\/test-no-fdo
     actions:
       label:
         add:
           - ready
+  - name: refactored queue action rule
+    conditions: []
+    actions:
+      queue:
