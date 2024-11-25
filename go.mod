@@ -26,7 +26,7 @@ require (
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.openly.dev/pointy v1.3.0
 	gorm.io/driver/postgres v1.5.10
 	gorm.io/driver/sqlite v1.5.6
