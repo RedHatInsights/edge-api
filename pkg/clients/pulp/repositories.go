@@ -26,6 +26,7 @@ func (ps *PulpService) RepositoriesCreate(ctx context.Context, name string) (*Os
 	return resp.JSON201, nil
 }
 
+// RepositoriesImport imports an initial commit into a repo
 func (ps *PulpService) RepositoriesImport(ctx context.Context, id uuid.UUID, repoName, artifactHref string) (*OstreeOstreeRepositoryResponse, error) {
 	body := OstreeImportAll{
 		Artifact:       artifactHref,
@@ -33,6 +34,43 @@ func (ps *PulpService) RepositoriesImport(ctx context.Context, id uuid.UUID, rep
 	}
 	resp, err := ps.cwr.RepositoriesOstreeOstreeImportAllWithResponse(ctx, ps.dom, id, body, addAuthenticationHeader)
 
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.JSON202 == nil {
+		return nil, fmt.Errorf("unexpected response: %d, body: %s", resp.StatusCode(), string(resp.Body))
+	}
+
+	hrefs, err := ps.WaitForTask(ctx, resp.JSON202.Task)
+	if err != nil {
+		return nil, err
+	}
+	if len(hrefs) != 1 {
+		return nil, fmt.Errorf("unexpected number of created resources: %d", len(hrefs))
+	}
+	href := hrefs[0]
+
+	result, err := ps.RepositoriesRead(ctx, ScanUUID(&href))
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// RepositoriesImportCommit updates an existing repo containing one or more commits
+func (ps *PulpService) RepositoriesImportCommit(ctx context.Context, id uuid.UUID, repoName, artifactHref string, ostreeRef string) (*OstreeOstreeRepositoryResponse, error) {
+	body := OstreeImportCommitsToRef{
+		Artifact:       artifactHref,
+		Ref:            ostreeRef,
+		RepositoryName: repoName,
+	}
+
+	// OstreeImportCommits includes the OSTree ref for updating a tree that has at least one commit
+	// Use OstreeImportAll for the initial commit
+	// see https://pulpproject.org/pulp_ostree/docs/user/guides/import-commit/
+	resp, err := ps.cwr.RepositoriesOstreeOstreeImportCommitsWithResponse(ctx, ps.dom, id, body, addAuthenticationHeader)
 	if err != nil {
 		return nil, err
 	}
