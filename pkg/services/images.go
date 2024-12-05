@@ -958,7 +958,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 		"aws_status":  repo.Status,
 		"pulp_url":    parsedPulpURL.Redacted(),
 		"pulp_status": repo.PulpStatus,
-	}).Info("OSTree repo is ready")
+	}).Info("OSTree repo process complete")
 
 	if repo.Status != models.RepoStatusSuccess && repo.PulpStatus != models.RepoStatusSuccess {
 		return nil, goErrors.New("No repo has been created")

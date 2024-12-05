@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/pulp"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -142,8 +143,7 @@ func createOSTreeRepository(ctx context.Context, pulpService *pulp.PulpService, 
 	cgPulpHref := *cg.PulpHref
 	log.WithContext(ctx).WithFields(log.Fields{
 		"contentguard_href": cgPulpHref,
-		"contentguard_0":    (*cg.Guards)[0],
-		"contentguard_1":    (*cg.Guards)[1],
+		"content_guards":    *cg.Guards,
 	}).Info("Pulp Content Guard found or created")
 
 	distribution, err := pulpService.DistributionsCreate(ctx, name, name, *pulpRepo.PulpHref, cgPulpHref)
@@ -153,7 +153,7 @@ func createOSTreeRepository(ctx context.Context, pulpService *pulp.PulpService, 
 	log.WithContext(ctx).WithFields(log.Fields{
 		"name":      distribution.Name,
 		"base_path": distribution.BasePath,
-		"base_url":  distribution.BaseUrl,
+		"base_url":  *distribution.BaseUrl,
 		"pulp_href": distribution.PulpHref,
 	}).Info("Pulp Distribution created")
 
@@ -172,7 +172,7 @@ func distributionURL(ctx context.Context, distBaseURL string, domain string, rep
 	distURL := prodDistURL.String()
 
 	// temporarily handle stage URLs so Image Builder worker can get to stage Pulp
-	if strings.Contains(distBaseURL, "stage") {
+	if feature.PulpIntegrationSwapStageURL.IsEnabled() && strings.Contains(distBaseURL, "stage") {
 		stagePulpURL := fmt.Sprintf("%s/api/pulp-content/%s/%s", cfg.PulpURL, domain, repoName)
 		stageDistURL, err := url.Parse(stagePulpURL)
 		if err != nil {

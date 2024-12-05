@@ -349,6 +349,12 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		rhsm = false
 	}
 
+	if feature.PulpIntegration.IsEnabled() && image.Commit.Repo.PulpURL != "" {
+		repoURL = image.Commit.Repo.PulpURL
+		parsedURL, _ := url.Parse(repoURL)
+		c.log.WithField("redacted_url", parsedURL.Redacted()).Debug("Using Pulp repo URL for ISO installer request")
+	}
+
 	users := make([]User, 0)
 	if image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
 		users = append(users, User{Name: image.Installer.Username,
