@@ -119,6 +119,12 @@ var PulpIntegrationDisableAWSRepoStore = &Flag{Name: "edge-management.pulp_integ
 // PulpIntegrationUpdateViaPulp uses the Pulp Distribution URL for image and system updates
 var PulpIntegrationUpdateViaPulp = &Flag{Name: "edge-management.pulp_integration_updateviapulp", EnvVar: "FEATURE_PULP_INTEGRATION_UPDATEVIAPULP"}
 
+// PulpIntegrationSwapStageURL temporarily uses a specific URL for Image Builder to access Pulp in stage
+var PulpIntegrationSwapStageURL = &Flag{Name: "edge-management.pulp_integration_swapstageurl", EnvVar: "FEATURE_PULP_INTEGRATION_SWAPSTAGEURL"}
+
+// PulpIntegrationTurnpikeContentGuard enables and turnpike content guard and disables the RBAC content guard
+var PulpIntegrationTurnpikeGuard = &Flag{Name: "edge-management.pulp_integration_turnpikeguard", EnvVar: "FEATURE_PULP_INTEGRATION_TURNPIKEGUARD"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
