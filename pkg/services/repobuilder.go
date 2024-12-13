@@ -350,11 +350,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		if err != nil {
 			return nil, err
 		}
-		update.Repo.URL = updateCommit.Repo.URL
+		update.Repo.URL = updateCommit.Repo.GetURL()
 		rb.log.WithField("update_transaction", update).Info("UPGRADE: point update to commit repo")
 	}
 
-	rb.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+	rb.log.WithField("repo", update.Repo.GetURL()).Info("Update repo URL")
 	update.Repo.Status = models.RepoStatusSuccess
 	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 		return nil, err
@@ -405,7 +405,6 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 
 // ImportRepo (unpack and upload) a single repo
 func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
-	// FIXME: delete after Pulp Store Repo is stable
 	var cmt models.Commit
 	cmtDB := db.DB.Where("repo_id = ?", r.ID).First(&cmt)
 	if cmtDB.Error != nil {
@@ -476,7 +475,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
 
-	redactedURL, _ := url.Parse(r.URL)
+	redactedURL, _ := url.Parse(r.GetURL())
 	rb.log.WithField("repo_url", redactedURL.Redacted()).Info("Commit stored in AWS OSTree repo")
 
 	return r, nil

@@ -517,17 +517,17 @@ func ValidateStorageImage(w http.ResponseWriter, r *http.Request) string {
 		return ""
 	}
 
-	if image.Commit.Repo == nil || image.Commit.Repo.URL == "" {
+	if image.Commit.Repo == nil || image.Commit.Repo.GetURL() == "" {
 		logger.Error("image repository does not exist")
 		respondWithAPIError(w, logger, errors.NewNotFound("image repository does not exist"))
 		return ""
 	}
 
-	RepoURL, err := url2.Parse(image.Commit.Repo.URL)
+	RepoURL, err := url2.Parse(image.Commit.Repo.GetURL())
 	if err != nil {
 		logger.WithFields(log.Fields{
 			"error": err.Error(),
-			"URL":   image.Commit.Repo.URL,
+			"URL":   image.Commit.Repo.GetURL(),
 		}).Error("error occurred when parsing repository url")
 		respondWithAPIError(w, logger, errors.NewBadRequest("bad image repository url"))
 		return ""

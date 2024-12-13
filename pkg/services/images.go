@@ -578,7 +578,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 				err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 				return err
 			}
-			image.Commit.OSTreeParentCommit = repo.URL
+			image.Commit.OSTreeParentCommit = repo.GetURL()
 		}
 
 		if config.DistributionsRefs[previousSuccessfulImage.Distribution] != config.DistributionsRefs[image.Distribution] {
