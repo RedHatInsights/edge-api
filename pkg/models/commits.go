@@ -5,6 +5,7 @@ package models
 import (
 	"errors"
 
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -62,6 +63,18 @@ type Repo struct {
 	Status     string `json:"RepoStatus"`
 	PulpURL    string `json:"pulp_repo_url"`
 	PulpStatus string `json:"pulp_repo_status"`
+}
+
+// GetURL is a temporary helper to return the URL of the preferred repo store
+//
+//	this avoids the feature flag everywhere repo.URL is used
+//	also using GetURL (not URL) to avoid changing the struct used by Gorm
+func (r Repo) GetURL() string {
+	if feature.PulpIntegration.IsEnabled() && r.PulpStatus == RepoStatusSuccess {
+		return r.PulpURL
+	}
+
+	return r.URL
 }
 
 // Package represents the packages a Commit can have
