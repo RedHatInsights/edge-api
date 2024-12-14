@@ -197,7 +197,7 @@ func fileRepoImport(ctx context.Context, pulpService *pulp.PulpService, sourceUR
 	return artifact, version, nil
 }
 
-// Import imports an artifact into a Pulp repo and deletes the tarfile artifact
+// ostreeRepoImport imports an artifact into a Pulp ostree repo
 func ostreeRepoImport(ctx context.Context, pulpService *pulp.PulpService, pulpHref string, pulpRepoName string,
 	distBaseURL string, fileRepoArtifact string) (string, error) {
 
@@ -213,16 +213,10 @@ func ostreeRepoImport(ctx context.Context, pulpService *pulp.PulpService, pulpHr
 	}
 	log.WithContext(ctx).WithField("repo_href", *repoImported.PulpHref).Info("Repository imported")
 
-	repoURL, err := distributionURL(ctx, pulpService.Domain(), pulpRepoName)
-	if err != nil {
-		log.WithContext(ctx).WithField("error", err.Error()).Error("Error getting distibution URL for Pulp repo")
-		return "", err
-	}
-
-	parsedURL, _ := url.Parse(repoURL)
+	parsedURL, _ := url.Parse(distBaseURL)
 	log.WithContext(ctx).WithFields(log.Fields{
 		"repo_distribution_url": parsedURL.Redacted(),
 	}).Debug("Repo import into Pulp complete")
 
-	return repoURL, nil
+	return distBaseURL, nil
 }

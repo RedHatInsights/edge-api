@@ -4,7 +4,9 @@ package models
 
 import (
 	"errors"
+	"net/url"
 
+	"github.com/redhatinsights/edge-api/config"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -59,17 +61,29 @@ type Commit struct {
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
 	Model
-	URL        string `json:"RepoURL"`
-	Status     string `json:"RepoStatus"`
-	PulpURL    string `json:"pulp_repo_url"`
-	PulpStatus string `json:"pulp_repo_status"`
+	URL        string `json:"RepoURL"`          // AWS repo URL
+	Status     string `json:"RepoStatus"`       // AWS repo upload status
+	PulpURL    string `json:"pulp_repo_url"`    // Distribution URL returned from Pulp
+	PulpStatus string `json:"pulp_repo_status"` // Status of Pulp repo import
 }
 
-// GetURL is a temporary helper to return the URL of the preferred repo store
-//
-//	this avoids the feature flag everywhere repo.URL is used
-//	also using GetURL (not URL) to avoid changing the struct used by Gorm
-func (r Repo) GetURL() string {
+// ContentURL is the URL for internal and Image Builder access to the content in a Pulp repo
+func (r Repo) ContentURL() string {
+	pulpConfig := config.Get().Pulp
+
+	if feature.PulpIntegration.IsEnabled() && r.PulpStatus == RepoStatusSuccess {
+		parsedURL, _ := url.Parse(r.PulpURL)
+		parsedConfigContentURL, _ := url.Parse(pulpConfig.ContentURL)
+		parsedURL.Host = parsedConfigContentURL.Host
+
+		return parsedURL.String()
+	}
+
+	return r.URL
+}
+
+// DistributionURL is the URL for external access to the content in a Pulp repo
+func (r Repo) DistributionURL() string {
 	if feature.PulpIntegration.IsEnabled() && r.PulpStatus == RepoStatusSuccess {
 		return r.PulpURL
 	}

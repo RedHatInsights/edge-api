@@ -348,7 +348,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 // NewTemplateRemoteInfo contains the info for the ostree remote file to be written to the system
 func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
 
-	updateURL := update.Repo.GetURL()
+	updateURL := update.Repo.DistributionURL()
 
 	return TemplateRemoteInfo{
 		RemoteURL:           updateURL,
@@ -1016,7 +1016,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 						return nil, result.Error
 					}
 					s.log.WithFields(log.Fields{
-						"repoURL": repo.GetURL(),
+						"repoURL": repo.DistributionURL(),
 						"repoID":  repo.ID,
 					}).Debug("Getting repo info")
 				}
