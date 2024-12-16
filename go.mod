@@ -11,7 +11,7 @@ require (
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/getsentry/sentry-go v0.30.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-chi/chi/v5 v5.1.0
+	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-openapi/runtime v0.28.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
