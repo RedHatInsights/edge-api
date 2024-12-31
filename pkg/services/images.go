@@ -371,6 +371,8 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		image.Installer.OrgID = image.OrgID
 	}
 
+	image.Commit.Repo = &models.Repo{}
+
 	if result := db.DB.Create(&image); result.Error != nil {
 		return result.Error
 	}
@@ -578,7 +580,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 				err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 				return err
 			}
+			// NOTE: this is storing the URL of the parent commit instead of the DBID of the parent commit
 			image.Commit.OSTreeParentCommit = repo.ContentURL()
+
+			image.Commit.Repo = &models.Repo{
+				PulpID:  repo.PulpID,
+				PulpURL: repo.PulpURL,
+			}
 		}
 
 		if config.DistributionsRefs[previousSuccessfulImage.Distribution] != config.DistributionsRefs[image.Distribution] {
@@ -676,7 +684,7 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 	imageID := image.ID
 	for {
 		// reload the image from database, for a long-running process
-		if err := db.DB.Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
+		if err := db.DB.Joins("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
 			log.WithContext(ctx).WithField("error", err.Error()).Error("error occurred when reloading image from database")
 			if goErrors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, new(ImageNotFoundError)
@@ -903,24 +911,17 @@ func (s *ImageService) runAWSRepoProcess(repo *models.Repo) (*models.Repo, error
 // CreateRepoForImage creates the OSTree repo to host that image
 func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image) (*models.Repo, error) {
 	s.log.Info("Creating OSTree repo for image")
-	repo := &models.Repo{
-		Status:     models.RepoStatusPending,
-		PulpStatus: models.RepoStatusPending,
-	}
-	tx := db.DB.Create(repo)
+
+	img.Commit.Repo.Status = models.RepoStatusPending
+	img.Commit.Repo.PulpStatus = models.RepoStatusPending
+
+	repo := img.Commit.Repo
+
+	tx := db.DB.Save(img.Commit)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	s.log = s.log.WithField("repoID", repo.ID)
-	s.log.Debug("OSTree repo is created on the database")
-
-	img.Commit.Repo = repo
-	img.Commit.RepoID = &repo.ID
-
-	tx = db.DB.Save(img.Commit)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
 	s.log.Debug("OSTree repo was saved to commit")
 
 	var err error

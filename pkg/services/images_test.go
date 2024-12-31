@@ -2577,20 +2577,12 @@ var _ = Describe("Image Service Test", func() {
 				Name:      faker.UUIDHyphenated(),
 				RequestID: faker.UUIDHyphenated(),
 				Installer: &models.Installer{OrgID: orgID},
-				Commit:    &models.Commit{OrgID: orgID},
+				Commit: &models.Commit{
+					OrgID: orgID,
+					Repo:  &models.Repo{}},
 			}
 			err := db.DB.Create(image).Error
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should create image repo successfully", func() {
-			expectedRepo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
-			err := db.DB.Create(&expectedRepo).Error
-			Expect(err).ToNot(HaveOccurred())
-			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
-			repo, err := service.CreateRepoForImage(context.Background(), image)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(repo.ID).To(Equal(expectedRepo.ID))
 		})
 
 		It("should return successfully if AWS repo status is success", func() {

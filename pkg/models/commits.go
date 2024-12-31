@@ -26,7 +26,7 @@ const (
 	RepoStatusError = "ERROR"
 	// RepoStatusPending is for when the repo process is starting
 	RepoStatusPending = "PENDING"
-	// RepoStatusSkipped is for when a Repo is available to the user
+	// RepoStatusSkipped is for when a Repo is available to the user (post commit build)
 	RepoStatusSkipped = "SKIPPED"
 	// RepoStatusSuccess is for when a Repo is available to the user
 	RepoStatusSuccess = "SUCCESS"
@@ -63,6 +63,7 @@ type Repo struct {
 	Model
 	URL        string `json:"RepoURL"`          // AWS repo URL
 	Status     string `json:"RepoStatus"`       // AWS repo upload status
+	PulpID     string `json:"pulp_repo_id"`     // Pulp Repo ID (used for updates)
 	PulpURL    string `json:"pulp_repo_url"`    // Distribution URL returned from Pulp
 	PulpStatus string `json:"pulp_repo_status"` // Status of Pulp repo import
 }

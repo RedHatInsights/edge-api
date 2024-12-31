@@ -14,55 +14,83 @@ import (
 )
 
 // PulpRepoStore imports an OSTree repo into a Pulp repository
-func PulpRepoStore(ctx context.Context, orgID string, sourceRepoID uint, sourceURL string) (string, error) {
+func PulpRepoStore(ctx context.Context, orgID string, edgeRepoID uint,
+	imageBuilderTarURL string, pulpParentID string, pulpParentURL string,
+	pulpParentRef string) (string, string, error) {
 	// create a pulp service with a pre-defined name
 	pserv, err := domainService(ctx, orgID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	log.WithContext(ctx).Info("Service for domain created")
 
 	// Import the commit tarfile into an initial Pulp file repo
-	fileRepoArtifact, fileRepoVersion, err := fileRepoImport(ctx, pserv, sourceURL)
+	fileRepoArtifact, fileRepoVersion, err := fileRepoImport(ctx, pserv, imageBuilderTarURL)
 	if err != nil {
 		log.WithContext(ctx).Error("Error importing tarfile to initial pulp file repository")
 
-		return "", err
+		return "", "", err
 	}
 	log.WithContext(ctx).WithFields(log.Fields{
 		"artifact": fileRepoArtifact,
 		"version":  fileRepoArtifact,
 	}).Info("Pulp artifact uploaded")
 
-	// create an OSTree repository in Pulp
-	repoName := fmt.Sprintf("repo-%s-%d", orgID, sourceRepoID)
+	var pulpID string
+	var distBaseURL string
+	var pulpHref string
+	if pulpParentID != "" {
+		// update a Pulp OSTree repository
+		err = ostreeRepoImportUpdate(ctx, pserv, pulpParentID, fileRepoArtifact, pulpParentRef)
+		if err != nil {
+			log.WithContext(ctx).Error("Error importing tarfile into pulp ostree repository")
 
-	distBaseURL, pulpHref, err := createOSTreeRepository(ctx, pserv, orgID, repoName)
-	if err != nil {
-		log.WithContext(ctx).Error("Error creating pulp ostree repository")
+			return "", "", err
+		}
 
-		return "", err
+		pulpID = pulpParentID
+		distBaseURL = pulpParentURL
+
+		log.WithFields(log.Fields{
+			"parent_id":     pulpParentID,
+			"parent_url":    pulpParentURL,
+			"dist_base_url": distBaseURL,
+			"pulp_href":     pulpHref},
+		).Info("Existing repo updated with a new commit")
+	} else {
+		// create a Pulp OSTree repository
+		repoName := fmt.Sprintf("repo-%s-%d", orgID, edgeRepoID)
+
+		distBaseURL, pulpHref, err = createOSTreeRepository(ctx, pserv, orgID, repoName)
+		if err != nil {
+			log.WithContext(ctx).Error("Error creating pulp ostree repository")
+
+			return "", "", err
+		}
+
+		log.WithContext(ctx).WithFields(log.Fields{
+			"dist_base_url": distBaseURL,
+			"pulp_href":     pulpHref,
+		}).Info("Pulp OSTree Repo created with Content Guard and Distribution")
+		err = ostreeRepoImport(ctx, pserv, pulpHref, fileRepoArtifact)
+		if err != nil {
+			log.WithContext(ctx).Error("Error importing tarfile into pulp ostree repository")
+
+			return "", "", err
+		}
+
+		pulpID = pulp.ScanUUID(&pulpHref).String()
 	}
-	log.WithContext(ctx).WithFields(log.Fields{
-		"dist_base_url": distBaseURL,
-		"pulp_href":     pulpHref,
-	}).Info("Pulp OSTree Repo created with Content Guard and Distribution")
 
-	repoURL, err := ostreeRepoImport(ctx, pserv, pulpHref, repoName, distBaseURL, fileRepoArtifact)
-	if err != nil {
-		log.WithContext(ctx).Error("Error importing tarfile into pulp ostree repository")
-
-		return "", err
-	}
-	parsedURL, _ := url.Parse(repoURL)
+	parsedURL, _ := url.Parse(distBaseURL)
 	log.WithContext(ctx).WithField("repo_url", parsedURL.Redacted()).Info("Image Builder commit tarfile imported into pulp ostree repo from pulp file repo")
 
 	if err = pserv.FileRepositoriesVersionDelete(ctx, pulp.ScanUUID(&fileRepoVersion), pulp.ScanRepoFileVersion(&fileRepoVersion)); err != nil {
-		return "", err
+		return "", "", err
 	}
 	log.WithContext(ctx).WithField("filerepo_version", fileRepoVersion).Info("Artifact version deleted")
 
-	return repoURL, nil
+	return pulpID, distBaseURL, nil
 }
 
 // looks up a domain, creates one if it does not exist, and returns a service using that domain
@@ -198,25 +226,64 @@ func fileRepoImport(ctx context.Context, pulpService *pulp.PulpService, sourceUR
 }
 
 // ostreeRepoImport imports an artifact into a Pulp ostree repo
-func ostreeRepoImport(ctx context.Context, pulpService *pulp.PulpService, pulpHref string, pulpRepoName string,
-	distBaseURL string, fileRepoArtifact string) (string, error) {
+func ostreeRepoImport(ctx context.Context, pulpService *pulp.PulpService,
+	pulpHref string, fileRepoArtifact string) error {
 
 	log.WithContext(ctx).WithFields(log.Fields{
-		"pulp_href":            pulp.ScanUUID(&pulpHref),
-		"pulp_reponame":        pulpRepoName,
-		"distribution_baseurl": distBaseURL,
-		"artifact_href":        fileRepoArtifact,
+		"pulp_href_uuid":     pulp.ScanUUID(&pulpHref),
+		"pulp_href":          pulpHref,
+		"artifact_href_uuid": pulp.ScanUUID(&fileRepoArtifact),
+		"artifact_href":      fileRepoArtifact,
 	}).Debug("Starting tarfile import into Pulp OSTree repository")
 	repoImported, err := pulpService.RepositoriesImport(ctx, pulp.ScanUUID(&pulpHref), "repo", fileRepoArtifact)
+
 	if err != nil {
-		return "", err
+		return err
 	}
-	log.WithContext(ctx).WithField("repo_href", *repoImported.PulpHref).Info("Repository imported")
 
-	parsedURL, _ := url.Parse(distBaseURL)
 	log.WithContext(ctx).WithFields(log.Fields{
-		"repo_distribution_url": parsedURL.Redacted(),
-	}).Debug("Repo import into Pulp complete")
+		"repo_href": *repoImported.PulpHref,
+		"repo_name": repoImported.Name,
+	}).Info("Repository imported")
 
-	return distBaseURL, nil
+	return nil
+}
+
+// ostreeRepoImportUpdate imports an artifact into a Pulp ostree repo
+func ostreeRepoImportUpdate(ctx context.Context, pulpService *pulp.PulpService,
+	parentID string, fileRepoArtifact string, parentRef string) error {
+
+	log.WithContext(ctx).WithFields(log.Fields{
+		"pulp_parent_uuid":   parentID,
+		"artifact_href_uuid": pulp.ScanUUID(&fileRepoArtifact),
+		"artifact_href":      fileRepoArtifact,
+		"pulp_parent_ref":    parentRef,
+	}).Debug("Starting tarfile update into Pulp OSTree repository")
+
+	var repoImported *pulp.OstreeOstreeRepositoryResponse
+	var err error
+
+	pulpUUID, err := uuid.Parse(parentID)
+	if err != nil {
+		log.WithField("pulp_id", pulpUUID).Error("Unable to parse Pulp ID into UUID")
+
+		return err
+	}
+
+	repoImported, err = pulpService.RepositoriesImportCommit(ctx,
+		pulpUUID,
+		"repo",
+		fileRepoArtifact,
+		parentRef)
+
+	if err != nil {
+		return err
+	}
+
+	log.WithContext(ctx).WithFields(log.Fields{
+		"repo_href": *repoImported.PulpHref,
+		"repo_name": repoImported.Name,
+	}).Info("Repository imported")
+
+	return nil
 }
