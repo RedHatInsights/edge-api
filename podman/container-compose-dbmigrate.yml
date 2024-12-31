@@ -1,4 +1,7 @@
 version: '2'
+secrets:
+  edgemgmt_config:
+    file: $PWD/podman/env/edgemgmt_config.json
 services:
     edge-api-dbmigrate:
       image: localhost/edge-api:localdev
@@ -8,3 +11,6 @@ services:
         - ~/dev/git/RedHatInsights/edge-api:/opt/app-root/src:Z
       working_dir: /opt/app-root/src
       command:  go run cmd/migrate/main.go
+      secrets:
+        - source: edgemgmt_config
+          target: /tmp/edgemgmt_config.json

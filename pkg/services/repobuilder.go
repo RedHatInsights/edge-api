@@ -376,7 +376,8 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 
 	var err error
 	log.WithContext(ctx).Debug("Storing repo via Pulp")
-	repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL)
+	repo.PulpID, repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL,
+		repo.PulpID, repo.PulpURL, cmt.OSTreeParentRef)
 	if err != nil {
 		log.WithContext(ctx).WithField("error", err.Error()).Error("Error storing Image Builder commit in Pulp OSTree repo")
 
@@ -396,9 +397,6 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
 		return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
-
-	redactedURL, _ := url.Parse(repo.PulpURL)
-	log.WithContext(ctx).WithField("repo_url", redactedURL.Redacted()).Info("Commit stored in Pulp OSTree repo")
 
 	return repo, nil
 }
