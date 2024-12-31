@@ -60,7 +60,7 @@ func NewMemoryClient() *MemoryWorker {
 		SlowQueueSize: 50,
 		FastWorkers:   100,
 		SlowWorkers:   10,
-		Timeout:       2 * time.Hour,
+		Timeout:       6 * time.Hour,
 		IntSignal:     []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGSTOP},
 	})
 }
