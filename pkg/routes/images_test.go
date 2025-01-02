@@ -1802,6 +1802,7 @@ var _ = Describe("Images Route Integration Tests", func() {
 						InstalledPackages: []models.InstalledPackage{
 							{Name: "vim"},
 						},
+						Repo: &models.Repo{},
 					},
 				}
 
