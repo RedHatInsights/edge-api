@@ -31,12 +31,6 @@ objects:
 - apiVersion: v1
   kind: Secret
   metadata:
-    name: edge-pulp-content-password
-  stringData:
-    key: ${PULP_CONTENT_PASSWORD}
-- apiVersion: v1
-  kind: Secret
-  metadata:
     name: edge-pulp-test-s3
   stringData:
     region: ${PULP_S3_REGION}
@@ -176,13 +170,6 @@ objects:
               key: key
         - name : PULP_CONTENT_URL
           value: ${PULP_CONTENT_URL}
-        - name : PULP_CONTENT_USERNAME
-          value: ${PULP_CONTENT_USERNAME}
-        - name : PULP_CONTENT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: edge-pulp-content-password
-              key: key
         - name : PULP_S3_REGION
           valueFrom:
             secretKeyRef:
@@ -560,11 +547,6 @@ parameters:
 - name: PULP_CONTENT_URL
   description: Pulp service content URL
   value: "http://pulp-service:8080"
-- name: PULP_CONTENT_USERNAME
-  description: Username for Pulp Content API authentication
-  value: "pulp-content-user"
-- name: PULP_CONTENT_PASSWORD
-  description: Password for Pulp Content API authentication
 - name: PULP_GUARD_SUBJECT_DN
   description: Service account DN 
   value: "pulp/guard/subject/dn"
