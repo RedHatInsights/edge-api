@@ -360,7 +360,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	}
 
 	if feature.PulpIntegration.IsEnabled() && image.Commit.Repo.PulpURL != "" {
-		repoURL = image.Commit.Repo.PulpURL
+		repoURL = image.Commit.Repo.ContentURL()
 		parsedURL, _ := url.Parse(repoURL)
 		c.log.WithField("redacted_url", parsedURL.Redacted()).Debug("Using Pulp repo URL for ISO installer request")
 	}
