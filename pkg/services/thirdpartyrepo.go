@@ -9,10 +9,10 @@ import (
 
 	"gorm.io/gorm"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	log "github.com/sirupsen/logrus"
 )
 
 // ThirdPartyRepoServiceInterface defines the interface that helps handles

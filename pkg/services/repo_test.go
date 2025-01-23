@@ -7,10 +7,10 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Repo Service Test", func() {

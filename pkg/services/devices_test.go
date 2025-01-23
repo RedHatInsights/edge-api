@@ -17,6 +17,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/common/seeder"
@@ -25,7 +26,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("DfseviceService", func() {

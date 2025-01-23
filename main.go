@@ -6,41 +6,35 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"runtime/debug"
 	"syscall"
 	"time"
 
 	"github.com/Unleash/unleash-client-go/v4"
-	"github.com/getsentry/sentry-go"
-	slg "github.com/getsentry/sentry-go/logrus"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
+	log "github.com/osbuild/logging/pkg/logrus"
+	"github.com/osbuild/logging/pkg/strc"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redhatinsights/edge-api/config"
 	em "github.com/redhatinsights/edge-api/internal/middleware"
-	l "github.com/redhatinsights/edge-api/logger"
+	"github.com/redhatinsights/edge-api/logger"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/jobs"
 	"github.com/redhatinsights/edge-api/pkg/metrics"
 	"github.com/redhatinsights/edge-api/pkg/routes"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
-	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
-	log "github.com/sirupsen/logrus"
 )
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
@@ -48,12 +42,6 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 		SpecURL: "/api/edge/v1/openapi.json",
 	}
 	return redoc.Redoc(opt, handler)
-}
-
-func initDependencies() {
-	config.Init()
-	l.InitLogger(os.Stdout)
-	db.InitDB()
 }
 
 func serveMetrics(port int) *http.Server {
@@ -68,42 +56,11 @@ func serveMetrics(port int) *http.Server {
 	}
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			l.LogErrorAndPanic("metrics service stopped unexpectedly", err)
+			logger.LogErrorAndPanic("metrics service stopped unexpectedly", err)
 		}
 	}()
 	log.Infof("metrics service started at port %d", port)
 	return &server
-}
-
-func logMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		t1 := time.Now()
-		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-
-		org_id, _ := common.GetOrgID(r)
-		fields := log.Fields{
-			"request_id": request_id.GetReqID(r.Context()),
-			"org_id":     org_id,
-			"method":     r.Method,
-		}
-
-		log.WithContext(r.Context()).WithFields(fields).Debugf("Started %s request %s", r.Method, r.URL.Path)
-
-		defer func() {
-			latency := time.Since(t1).Milliseconds()
-			fields["latency_ms"] = latency
-			fields["status_code"] = ww.Status()
-			fields["bytes"] = ww.BytesWritten()
-			log.WithContext(r.Context()).WithFields(fields).Infof("Finished %s request %s with %d", r.Method, r.URL.Path, ww.Status())
-		}()
-
-		next.ServeHTTP(ww, r)
-	})
 }
 
 func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
@@ -114,7 +71,14 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		middleware.RealIP,
 		middleware.Recoverer,
 		setupDocsMiddleware,
-		logMiddleware,
+		strc.NewMiddlewareWithFilters(
+			slog.Default(),
+			strc.IgnorePathPrefix("/metrics"),
+			strc.IgnorePathPrefix("/status"),
+			strc.IgnorePathPrefix("/ready"),
+		),
+		strc.HeadfieldPairMiddleware(logger.HeadfieldPairs),
+		strc.RecoverPanicMiddleware(slog.Default()),
 	)
 
 	// Unauthenticated routes
@@ -166,7 +130,7 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 	})
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			l.LogErrorAndPanic("web service stopped unexpectedly", err)
+			logger.LogErrorAndPanic("web service stopped unexpectedly", err)
 		}
 	}()
 	log.Infof("web service started at port %d", cfg.WebPort)
@@ -178,7 +142,7 @@ func gracefulTermination(server *http.Server, serviceName string) {
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
 	defer cancel()
 	if err := server.Shutdown(ctxShutdown); err != nil {
-		l.LogErrorAndPanic(fmt.Sprintf("%s service shutdown failed", serviceName), err)
+		logger.LogErrorAndPanic(fmt.Sprintf("%s service shutdown failed", serviceName), err)
 	}
 	log.Infof("%s service shutdown complete", serviceName)
 }
@@ -190,49 +154,14 @@ func main() {
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
 
-	initDependencies()
-
+	config.Init()
 	cfg := config.Get()
-
-	if feature.GlitchtipLogging.IsEnabled() {
-		// Set up Sentry client for GlitchTip error tracking
-		sentry.Init(sentry.ClientOptions{
-			Dsn: cfg.GlitchtipDsn,
-			Tags: map[string]string{
-				"service": "edge-api",
-				"binary":  filepath.Base(os.Args[0]),
-			},
-		})
-
-		// Initialize logrus hook for Sentry
-		sh := slg.NewFromClient([]log.Level{
-			log.PanicLevel,
-			log.FatalLevel,
-			log.ErrorLevel,
-		}, sentry.CurrentHub().Client())
-		log.AddHook(sh)
-
-		// Flush client after main exits
-		defer sentry.Flush(2 * time.Second)
-		// Report captured errors to GlitchTip
-		defer sentry.Recover()
+	err := logger.InitializeLogging(ctx, cfg)
+	if err != nil {
+		panic(err)
 	}
-
-	if cfg.Debug {
-		if buildInfo, ok := debug.ReadBuildInfo(); ok {
-			b := new(bytes.Buffer)
-			enc := json.NewEncoder(b)
-			enc.SetIndent("", "  ")
-			err := enc.Encode(buildInfo)
-			if err == nil {
-				log.WithField("buildInfo", b).Debug("Build information")
-			} else {
-				log.WithField("ok", ok).Debug("Unable to encode buildInfo")
-			}
-		} else {
-			log.WithField("ok", ok).Debug("Unable to get Build Info")
-		}
-	}
+	db.InitDB()
+	defer logger.Flush()
 
 	config.LogConfigAtStartup(cfg)
 

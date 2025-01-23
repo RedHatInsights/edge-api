@@ -30,8 +30,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 
 	"github.com/go-chi/chi/v5"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("DeviceGroup routes", func() {

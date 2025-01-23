@@ -7,9 +7,9 @@ import (
 	"slices"
 
 	"github.com/google/uuid"
+	"github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/ptr"
-	"github.com/sirupsen/logrus"
 )
 
 func compositeGuardName(orgID string) string {

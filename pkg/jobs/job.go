@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
-	"github.com/sirupsen/logrus"
 )
 
 func init() {

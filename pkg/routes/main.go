@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 func readAccount(w http.ResponseWriter, r *http.Request, logEntry log.FieldLogger) string {

@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
-	"github.com/sirupsen/logrus"
 )
 
 type tokenResponse struct {

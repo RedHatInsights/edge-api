@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"time"
@@ -12,7 +13,7 @@ import (
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 
 	"github.com/Unleash/unleash-client-go/v4"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 func initializeUnleash() {
@@ -36,18 +37,7 @@ func initializeUnleash() {
 	}
 }
 
-func initConfiguration() {
-	config.Init()
-	logger.InitLogger(os.Stdout)
-	cfg := config.Get()
-	config.LogConfigAtStartup(cfg)
-	db.InitDB()
-	initializeUnleash()
-}
-
-func flushLogAndExit(err error) {
-	// flush logger before app exit
-	logger.FlushLogger()
+func exitOnError(err error) {
 	if err != nil {
 		os.Exit(2)
 	}
@@ -55,7 +45,19 @@ func flushLogAndExit(err error) {
 }
 
 func main() {
-	initConfiguration()
+	ctx := context.Background()
+	config.Init()
+	cfg := config.Get()
+	err := logger.InitializeLogging(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Flush()
+
+	config.LogConfigAtStartup(cfg)
+	db.InitDB()
+	initializeUnleash()
+
 	// wait for 5 seconds, for the unleash client to refresh
 	time.Sleep(5 * time.Second)
 
@@ -66,5 +68,5 @@ func main() {
 		mainErr = err
 	}
 
-	flushLogAndExit(mainErr)
+	exitOnError(mainErr)
 }

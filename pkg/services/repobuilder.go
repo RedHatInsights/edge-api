@@ -20,7 +20,7 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/cavaliergopher/grab/v3"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"gorm.io/gorm"
 )
 

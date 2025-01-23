@@ -15,7 +15,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 func newOrgContentSourcesClient(orgID string) (repositories.ClientInterface, error) {

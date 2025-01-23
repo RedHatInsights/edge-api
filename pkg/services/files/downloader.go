@@ -10,7 +10,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // Downloader is the interface that downloads a source into a path

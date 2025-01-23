@@ -22,8 +22,8 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/go-chi/chi/v5"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 

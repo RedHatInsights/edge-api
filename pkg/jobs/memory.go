@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/metrics"
-	"github.com/sirupsen/logrus"
 )
 
 type Config struct {

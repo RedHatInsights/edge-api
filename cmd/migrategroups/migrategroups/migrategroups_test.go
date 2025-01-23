@@ -23,7 +23,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 var _ = Describe("Migrate device groups", func() {

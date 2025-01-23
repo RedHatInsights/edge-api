@@ -21,7 +21,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/stretchr/testify/assert"
 )
 

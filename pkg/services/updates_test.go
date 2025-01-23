@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
@@ -107,25 +108,21 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Context("SetUpdateErrorStatusWhenInterrupted", func() {
 		var updateService *services.UpdateService
 		var ctrl *gomock.Controller
-		var testLog *log.Entry
 		var logBuffer bytes.Buffer
 		var updateTransaction models.UpdateTransaction
-		var originalLogLevel log.Level
 		orgID := common.DefaultOrgID
+		oldLog := log.Default()
 
 		BeforeEach(func() {
+			logBuffer.Reset()
+			testLog := log.NewProxyFor(slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+			log.SetDefault(testLog)
+
 			ctrl = gomock.NewController(GinkgoT())
 
 			updateService = &services.UpdateService{
 				Service: services.NewService(context.Background(), log.WithField("service", "update")),
 			}
-			// configure the logger
-			originalLogLevel = log.GetLevel()
-			testLog = log.NewEntry(log.StandardLogger())
-			log.SetLevel(log.DebugLevel)
-			// Set the output to use our new local logBuffer
-			logBuffer = bytes.Buffer{}
-			testLog.Logger.SetOutput(&logBuffer)
 
 			updateTransaction = models.UpdateTransaction{OrgID: orgID, Status: models.UpdateStatusBuilding}
 			result := db.DB.Create(&updateTransaction)
@@ -134,7 +131,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		AfterEach(func() {
 			ctrl.Finish()
-			log.SetLevel(originalLogLevel)
+			log.SetDefault(oldLog)
 		})
 
 		It("update transaction status set to error when interrupted", func() {

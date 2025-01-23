@@ -13,6 +13,7 @@ import (
 	_ "database/sql"
 
 	"github.com/go-chi/chi/v5"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -23,7 +24,6 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
-	log "github.com/sirupsen/logrus"
 )
 
 // This provides type safety in the context object for our "image" key.  We

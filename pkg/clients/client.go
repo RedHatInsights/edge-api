@@ -11,10 +11,10 @@ import (
 	"os"
 	"time"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
-	log "github.com/sirupsen/logrus"
 )
 
 // GetOutgoingHeaders returns Red Hat Insights headers from our request to use it

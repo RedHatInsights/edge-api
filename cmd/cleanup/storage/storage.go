@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/files"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/sirupsen/logrus"
+	"github.com/osbuild/logging/pkg/logrus"
 )
 
 // DefaultTimeDuration the default time duration to use, this will allow to speedup testing

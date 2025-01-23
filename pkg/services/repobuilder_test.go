@@ -29,7 +29,8 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
-	log "github.com/sirupsen/logrus"
+	"github.com/osbuild/logging/pkg/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"gorm.io/gorm"
 )
 
@@ -153,7 +154,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			downloadService = services.RepoBuilder{
 				Service:      services.NewService(ctx, log.NewEntry(log.StandardLogger())),
 				FilesService: mockFilesService,
-				Log:          &log.Entry{},
+				Log:          logrus.Default(),
 			}
 
 		})

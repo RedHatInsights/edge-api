@@ -5,10 +5,10 @@ package services
 import (
 	"context"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 

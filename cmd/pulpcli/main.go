@@ -3,15 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"os"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/clients/pulp"
-	"github.com/sirupsen/logrus"
 )
 
 func domainList(ctx context.Context, c *pulp.PulpService) {
@@ -88,8 +88,8 @@ func fixtureCreate(ctx context.Context, c *pulp.PulpService, orgID, _ string) {
 func main() {
 	ctx := context.Background()
 	config.Init()
-	logger.InitLogger(os.Stdout)
-	logrus.SetLevel(logrus.TraceLevel)
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	logrus.SetDefault(logrus.NewProxy())
 
 	// when changing the domain, please delete all artifacts, repos, distros via CLI and then delete the domain
 	domainName := "edge-integration-test-2"

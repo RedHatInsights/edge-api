@@ -5,7 +5,7 @@ package services
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // Service is a blueprint for a service

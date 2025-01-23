@@ -4,18 +4,18 @@ import (
 	"context"
 	"time"
 
+	"github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
-	"github.com/sirupsen/logrus"
 	glogger "gorm.io/gorm/logger"
 )
 
 // GormLogger is a custom logger for GORM
 type GormLogger struct {
-	logger *logrus.Logger
+	logger logrus.Logger
 }
 
 // NewGormLogger creates a new instance of GormLogger
-func NewGormLogger(logger *logrus.Logger) *GormLogger {
+func NewGormLogger(logger logrus.Logger) *GormLogger {
 	return &GormLogger{
 		logger: logger,
 	}

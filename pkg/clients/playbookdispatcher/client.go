@@ -10,8 +10,8 @@ import (
 	"io"
 	"net/http"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/clients"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )

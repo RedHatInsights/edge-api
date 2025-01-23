@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/bxcodec/faker/v3"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/stretchr/testify/assert"
 )
 

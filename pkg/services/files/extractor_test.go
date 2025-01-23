@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sirupsen/logrus"
+	"github.com/osbuild/logging/pkg/logrus"
 )
 
 func TestUntar(t *testing.T) {

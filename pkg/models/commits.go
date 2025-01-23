@@ -7,9 +7,9 @@ import (
 	"errors"
 	"net/url"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/config"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 

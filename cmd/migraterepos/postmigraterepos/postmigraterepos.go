@@ -3,10 +3,10 @@ package postmigraterepos
 import (
 	"errors"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 )
 
 // ErrPostMigrationNotAvailable error returned when the post delete migration feature flag is disabled
