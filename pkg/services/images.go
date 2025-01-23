@@ -1415,8 +1415,8 @@ func ResumeCreateImageJobHandler(ctx context.Context, job *jobs.Job) {
 }
 
 func ResumeCreateImageFailHandler(ctx context.Context, job *jobs.Job) {
-	args := job.Args.(*ProcessImageJob)
-	db.DBx(ctx).Model(&models.Image{}).Where("ID = ?", args.ImageID).Update("Status", models.ImageStatusInterrupted)
+	args := job.Args.(*ResumeCreateImageJob)
+	db.DBx(ctx).Model(&models.Image{}).Where("ID = ?", args.Image.ID).Update("Status", models.ImageStatusError)
 }
 
 func init() {
