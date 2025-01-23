@@ -17,10 +17,10 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/go-chi/chi/v5"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	log "github.com/sirupsen/logrus"
 )
 
 type deviceGroupTypeKey string

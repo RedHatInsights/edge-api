@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	log "github.com/sirupsen/logrus"
 )
 
 // RepoServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices

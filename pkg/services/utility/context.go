@@ -5,7 +5,7 @@ package utility
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // these type and consts are to play by the context key rules (no strings)

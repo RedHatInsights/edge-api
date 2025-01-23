@@ -2,7 +2,7 @@ package unleash // nolint:gofmt,goimports,revive
 
 import (
 	unleashclient "github.com/Unleash/unleash-client-go/v4"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // nolint:revive // EdgeListener is an implementation of all of the listener interfaces that simply logs

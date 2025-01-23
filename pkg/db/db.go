@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	edgelogger "github.com/redhatinsights/edge-api/logger"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

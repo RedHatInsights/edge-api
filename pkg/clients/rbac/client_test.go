@@ -13,10 +13,10 @@ import (
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
-	log "github.com/sirupsen/logrus"
 )
 
 func StringPointer(str string) *string {

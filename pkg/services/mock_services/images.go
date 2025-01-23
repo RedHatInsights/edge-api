@@ -11,7 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
-	logrus "github.com/sirupsen/logrus"
+	logrus "github.com/osbuild/logging/pkg/logrus"
 	gorm "gorm.io/gorm"
 )
 

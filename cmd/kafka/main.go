@@ -3,17 +3,17 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
-	l "github.com/redhatinsights/edge-api/logger"
+	log "github.com/osbuild/logging/pkg/logrus"
+	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -61,8 +61,14 @@ func setImageStatus(id uint, status string) error {
 }
 
 func main() {
-	// set things up
-	log.Info("Starting up...")
+	ctx := context.Background()
+	config.Init()
+	cfg := config.Get()
+	err := logger.InitializeLogging(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Flush()
 
 	var images []models.Image
 	// IBevent represents the struct of the value in a Kafka message
@@ -71,9 +77,6 @@ func main() {
 		ImageID uint `json:"image_id"`
 	}
 
-	config.Init()
-	l.InitLogger(os.Stdout)
-	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
 	db.InitDB()
 

@@ -3,12 +3,13 @@
 package main
 
 import (
+	"context"
 	"os"
 
-	l "github.com/redhatinsights/edge-api/logger"
+	log "github.com/osbuild/logging/pkg/logrus"
+	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -22,9 +23,15 @@ func handlePanic(errorOccurred *bool) {
 }
 
 func main() {
+	ctx := context.Background()
 	config.Init()
-	l.InitLogger(os.Stdout)
 	cfg := config.Get()
+	err := logger.InitializeLogging(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Flush()
+
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,
 		"Auth":                     cfg.Auth,

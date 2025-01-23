@@ -3,30 +3,37 @@
 package main
 
 import (
+	"context"
 	"os"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/cmd/migrate/manual"
 	"github.com/redhatinsights/edge-api/config"
-	l "github.com/redhatinsights/edge-api/logger"
+	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	log "github.com/sirupsen/logrus"
 )
 
 func handlePanic() {
 	if err := recover(); err != nil {
 		log.Errorf("Database automigrate failure: %s", err)
-		l.FlushLogger()
 		os.Exit(1)
 	}
 }
 
 func main() {
+	ctx := context.Background()
 	config.Init()
-	l.InitLogger(os.Stdout)
+	cfg := config.Get()
+	err := logger.InitializeLogging(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Flush()
+
 	configValues, err := config.GetConfigValues()
 	if err != nil {
-		l.LogErrorAndPanic("error when getting config values", err)
+		logger.LogErrorAndPanic("error when getting config values", err)
 	}
 	log.WithFields(configValues).Info("Configuration Values:")
 	db.InitDB()
@@ -130,8 +137,6 @@ func main() {
 		}
 	}
 
-	// flush logger before app exit
-	l.FlushLogger()
 	if len(errors) > 0 {
 		os.Exit(2)
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // ErrMigrationNotAvailable error returned when the migration feature flag is disabled

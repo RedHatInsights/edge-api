@@ -13,7 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 )

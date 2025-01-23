@@ -33,10 +33,10 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	log "github.com/sirupsen/logrus"
 )
 
 func TestGetUpdateByID(t *testing.T) {

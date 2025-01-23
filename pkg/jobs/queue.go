@@ -3,7 +3,7 @@ package jobs
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
+	"github.com/osbuild/logging/pkg/logrus"
 )
 
 var Queue JobWorker

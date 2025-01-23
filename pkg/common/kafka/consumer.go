@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // Consumer is an interface for a kafka consumer, it matches the confluent consumer type definition

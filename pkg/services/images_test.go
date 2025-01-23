@@ -23,6 +23,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/osbuild/logging/pkg/logrus"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
@@ -36,7 +37,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_files"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/edge-api/config"

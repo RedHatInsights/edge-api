@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -27,13 +28,13 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/common/seeder"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	EdgeErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -474,11 +475,12 @@ func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
 }
 
 func TestGetImageDetailsByIDWithError(t *testing.T) {
-	// The Buffer type implements the Writer interface
 	var buffer bytes.Buffer
-	testLog := log.NewEntry(log.StandardLogger())
-	// Set the output to use our local buffer
-	testLog.Logger.SetOutput(&buffer)
+	oldLog := log.Default()
+	logger := log.NewProxyFor(slog.New(slog.NewTextHandler(&buffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	log.SetDefault(logger)
+	defer log.SetDefault(oldLog)
+
 	// An error to be raised by GetUpdateInfo call
 	forcedErr := io.EOF
 
@@ -496,7 +498,7 @@ func TestGetImageDetailsByIDWithError(t *testing.T) {
 
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
-		Log:          log.NewEntry(log.StandardLogger()),
+		Log:          logger,
 	})
 
 	handler := http.HandlerFunc(GetImageDetailsByID)
