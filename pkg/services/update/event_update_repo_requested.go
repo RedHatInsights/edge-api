@@ -79,7 +79,7 @@ func (ev EventUpdateRepoRequestedHandler) Consume(ctx context.Context) {
 
 	// get the services from the context
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
-	if _, err = edgeAPIServices.UpdateService.BuildUpdateRepo(updateTransaction.OrgID, updateTransaction.ID); err != nil {
+	if _, err = edgeAPIServices.UpdateService.BuildUpdateRepo(ctx, updateTransaction.OrgID, updateTransaction.ID); err != nil {
 		eventLog.WithFields(log.Fields{
 			"requestID": ev.Data.RequestID,
 			"orgID":     updateTransaction.OrgID,

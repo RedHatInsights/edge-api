@@ -266,7 +266,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxServices.Log.Debug("Updating an image from API request")
-	err = ctxServices.ImageService.UpdateImage(image, previousImage)
+	err = ctxServices.ImageService.UpdateImage(r.Context(), image, previousImage)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")
 		var apiError errors.APIError

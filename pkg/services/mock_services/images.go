@@ -439,17 +439,17 @@ func (mr *MockImageServiceInterfaceMockRecorder) SetLog(arg0 interface{}) *gomoc
 }
 
 // UpdateImage mocks base method.
-func (m *MockImageServiceInterface) UpdateImage(image, previousImage *models.Image) error {
+func (m *MockImageServiceInterface) UpdateImage(ctx context.Context, image, previousImage *models.Image) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateImage", image, previousImage)
+	ret := m.ctrl.Call(m, "UpdateImage", ctx, image, previousImage)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateImage indicates an expected call of UpdateImage.
-func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(image, previousImage interface{}) *gomock.Call {
+func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(ctx, image, previousImage interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), image, previousImage)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), ctx, image, previousImage)
 }
 
 // UpdateImageStatus mocks base method.

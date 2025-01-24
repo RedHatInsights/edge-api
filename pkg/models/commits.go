@@ -3,6 +3,7 @@
 package models
 
 import (
+	"context"
 	"errors"
 	"net/url"
 
@@ -69,10 +70,10 @@ type Repo struct {
 }
 
 // ContentURL is the URL for internal and Image Builder access to the content in a Pulp repo
-func (r Repo) ContentURL() string {
+func (r Repo) ContentURL(ctx context.Context) string {
 	pulpConfig := config.Get().Pulp
 
-	if feature.PulpIntegration.IsEnabled() && r.PulpStatus == RepoStatusSuccess {
+	if feature.PulpIntegration.IsEnabledCtx(ctx) && r.PulpStatus == RepoStatusSuccess {
 		parsedURL, _ := url.Parse(r.PulpURL)
 		parsedConfigContentURL, _ := url.Parse(pulpConfig.ContentURL)
 		parsedURL.Host = parsedConfigContentURL.Host
@@ -84,8 +85,8 @@ func (r Repo) ContentURL() string {
 }
 
 // DistributionURL is the URL for external access to the content in a Pulp repo
-func (r Repo) DistributionURL() string {
-	if feature.PulpIntegration.IsEnabled() && r.PulpStatus == RepoStatusSuccess {
+func (r Repo) DistributionURL(ctx context.Context) string {
+	if feature.PulpIntegration.IsEnabledCtx(ctx) && r.PulpStatus == RepoStatusSuccess {
 		return r.PulpURL
 	}
 

@@ -214,7 +214,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event := &eventReq.EventUpdateRepoRequestedHandler{}
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Return(&updateTransaction, nil)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Return(&updateTransaction, nil)
 				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Return(nil)
@@ -235,7 +235,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event := &eventReq.EventUpdateRepoRequestedHandler{}
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Times(0)
@@ -258,7 +258,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event := &eventReq.EventUpdateRepoRequestedHandler{}
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Times(0)
@@ -278,7 +278,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event := &eventReq.EventUpdateRepoRequestedHandler{}
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Return(&updateTransaction, nil)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Return(&updateTransaction, nil)
 				expectedError := errors.New("producer error")
 				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
@@ -304,7 +304,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				expectedError := errors.New("BuildUpdateRepo error")
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Return(nil, expectedError)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Return(nil, expectedError)
 				// ProduceEvent WriteTemplate should not be called
 				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
@@ -326,7 +326,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				// BuildUpdateRepo should not be called
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
 				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerMissingRequiredData.Error()))
 			})
@@ -344,7 +344,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ""
 				event.Data = *edgePayload
 				// BuildUpdateRepo should not be called
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
 				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerMissingRequiredData.Error()))
 			})
@@ -362,7 +362,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = faker.UUIDHyphenated()
 				event.Data = *edgePayload
 				// BuildUpdateRepo should not be called
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
 				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerRequiredDataMismatch.Error()))
 			})
@@ -380,7 +380,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				// BuildUpdateRepo should not be called
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
 				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerUpdateIDRequired.Error()))
 			})
@@ -401,7 +401,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				// BuildUpdateRepo should not be called
-				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
+				mockUpdateService.EXPECT().BuildUpdateRepo(ctx, event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
 				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerUpdateOrgIDMismatch.Error()))
 			})

@@ -1313,7 +1313,6 @@ var _ = Describe("Images Route Tests", func() {
 
 			It("should update image successfully", func() {
 				Expect(res.Error).ToNot(HaveOccurred())
-
 				var buf bytes.Buffer
 				err := json.NewEncoder(&buf).Encode(&updateImage)
 				Expect(err).ToNot(HaveOccurred())
@@ -1324,7 +1323,7 @@ var _ = Describe("Images Route Tests", func() {
 				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
 				// we cannot predict the instance value of first argument, we know that it's updateImage
 				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
-				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(nil)
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), gomock.Any(), &image).Return(nil)
 				// same here for context and updateImage
 				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.Any(), gomock.Any())
 				httpTestRecorder := httptest.NewRecorder()
@@ -1356,7 +1355,7 @@ var _ = Describe("Images Route Tests", func() {
 				// we cannot predict the instance value of first argument, we know that it's updateImage
 				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
 				expectedErr := new(services.PackageNameDoesNotExist)
-				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(expectedErr)
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), gomock.Any(), &image).Return(expectedErr)
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)
 
@@ -1378,7 +1377,7 @@ var _ = Describe("Images Route Tests", func() {
 				// we cannot predict the instance value of first argument, we know that it's updateImage
 				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
 				expectedErr := errors.New("unknown error occurred")
-				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(expectedErr)
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), gomock.Any(), &image).Return(expectedErr)
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)
 
@@ -1410,7 +1409,7 @@ var _ = Describe("Images Route Tests", func() {
 				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
 				// we cannot predict the instance value of first argument, we know that it's updateImage
 				// but as it's un-marshaled it's using another pointer.
-				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(nil)
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage), &image).Return(nil)
 				// same here for context and updateImage
 				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage), gomock.Any())
 
@@ -1454,7 +1453,7 @@ var _ = Describe("Images Route Tests", func() {
 				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
 				// we cannot predict the instance value of first argument, we know that it's updateImage
 				// but as it's un-marshaled it's using another pointer.
-				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(new(services.ImageNameChangeIsProhibited))
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage), &image).Return(new(services.ImageNameChangeIsProhibited))
 
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)

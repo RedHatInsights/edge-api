@@ -43,6 +43,8 @@ import (
 )
 
 var _ = Describe("Image Service Test", func() {
+	ctx := context.Background()
+
 	var ctrl *gomock.Controller
 	var service services.ImageService
 	var hash string
@@ -388,10 +390,12 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 	Describe("update image", func() {
+		ctx := context.Background()
+
 		Context("when previous image does not exist", func() {
 			var err error
 			BeforeEach(func() {
-				err = service.UpdateImage(&models.Image{}, nil)
+				err = service.UpdateImage(ctx, &models.Image{}, nil)
 			})
 			It("should have an error", func() {
 				Expect(err).To(HaveOccurred())
@@ -400,6 +404,7 @@ var _ = Describe("Image Service Test", func() {
 		})
 		Context("when previous image has failed status", func() {
 			It("should have an error returned by image builder", func() {
+				ctx := context.Background()
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
 				orgID := faker.UUIDHyphenated()
@@ -428,7 +433,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("Failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&models.Repo{}, nil)
-				actualErr := service.UpdateImage(image, previousImage)
+				actualErr := service.UpdateImage(ctx, image, previousImage)
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
@@ -478,7 +483,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 
-				actualErr := service.UpdateImage(image, &previousImage2)
+				actualErr := service.UpdateImage(ctx, image, &previousImage2)
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist85]))
@@ -542,7 +547,7 @@ var _ = Describe("Image Service Test", func() {
 				mockRepoService.EXPECT().GetRepoByID(previousImage2.Commit.RepoID).Return(previousImage2.Commit.Repo, nil)
 
 				// the previous successful image is previousImage2
-				actualErr := service.UpdateImage(image, &previousImage3)
+				actualErr := service.UpdateImage(ctx, image, &previousImage3)
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist85]))
@@ -594,7 +599,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 
-				actualErr := service.UpdateImage(image, &previousImage2)
+				actualErr := service.UpdateImage(ctx, image, &previousImage2)
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist90]))
@@ -660,7 +665,7 @@ var _ = Describe("Image Service Test", func() {
 				mockRepoService.EXPECT().GetRepoByID(previousImage2.Commit.RepoID).Return(previousImage2.Commit.Repo, nil)
 
 				// the previous successful image is previousImage2
-				actualErr := service.UpdateImage(image, &previousImage3)
+				actualErr := service.UpdateImage(ctx, image, &previousImage3)
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist90]))
@@ -701,7 +706,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("Failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				actualErr := service.UpdateImage(image, previousImage)
+				actualErr := service.UpdateImage(ctx, image, previousImage)
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
@@ -753,7 +758,7 @@ var _ = Describe("Image Service Test", func() {
 					expectedErr := fmt.Errorf("Failed creating commit for image")
 					mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 					mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&repo, nil)
-					actualErr := service.UpdateImage(image, previousImage)
+					actualErr := service.UpdateImage(ctx, image, previousImage)
 					Expect(actualErr).To(HaveOccurred())
 					Expect(actualErr).To(MatchError(expectedErr))
 
@@ -779,7 +784,7 @@ var _ = Describe("Image Service Test", func() {
 						expectedErr := fmt.Errorf("Failed creating commit for image")
 						mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 						mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&repo, nil)
-						actualErr := service.UpdateImage(image, previousImage)
+						actualErr := service.UpdateImage(ctx, image, previousImage)
 						Expect(actualErr).To(HaveOccurred())
 						Expect(actualErr).To(MatchError(expectedErr))
 
@@ -832,7 +837,7 @@ var _ = Describe("Image Service Test", func() {
 					expectedErr := fmt.Errorf("Failed creating commit for image")
 					mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 					mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&repo, nil)
-					actualErr := service.UpdateImage(image, previousImage)
+					actualErr := service.UpdateImage(ctx, image, previousImage)
 					Expect(actualErr).To(HaveOccurred())
 					Expect(actualErr).To(MatchError(expectedErr))
 
@@ -879,7 +884,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("Failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				actualErr := service.UpdateImage(image, previousImage)
+				actualErr := service.UpdateImage(ctx, image, previousImage)
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
@@ -930,7 +935,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("Failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
 
-				actualErr := service.UpdateImage(image, previousImage)
+				actualErr := service.UpdateImage(ctx, image, previousImage)
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
@@ -977,7 +982,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(&updateImage).Return(&updateImage, expectedErr)
 
-				actualErr := service.UpdateImage(&updateImage, &image)
+				actualErr := service.UpdateImage(ctx, &updateImage, &image)
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(updateImage.Name).To(Equal(image.Name))
@@ -996,7 +1001,7 @@ var _ = Describe("Image Service Test", func() {
 
 				expectedError := new(services.ImageNameChangeIsProhibited)
 
-				actualErr := service.UpdateImage(&updateImage, &image)
+				actualErr := service.UpdateImage(ctx, &updateImage, &image)
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedError))
 			})
@@ -1487,7 +1492,7 @@ var _ = Describe("Image Service Test", func() {
 				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[1].URL).Return(&csRepos[1], nil)
 				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[2].URL).Return(&csRepos[2], nil)
 
-				err := service.UpdateImage(&image, &previousImage)
+				err := service.UpdateImage(ctx, &image, &previousImage)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
 				Expect(len(image.ThirdPartyRepositories)).To(Equal(3))
@@ -1506,7 +1511,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedError := errors.New("expected unknown GetRepositoryByUUID error")
 				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(nil, expectedError)
 
-				err := service.UpdateImage(&image, &previousImage)
+				err := service.UpdateImage(ctx, &image, &previousImage)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
 			})
@@ -2089,7 +2094,7 @@ var _ = Describe("Image Service Test", func() {
 			imageBuilder := &models.SearchPackageResult{}
 			imageBuilder.Meta.Count = 0
 			mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
-			actualErr := service.UpdateImage(image, previousImage)
+			actualErr := service.UpdateImage(ctx, image, previousImage)
 			Expect(actualErr).To(HaveOccurred())
 			Expect(actualErr).To(MatchError(expectedErr))
 		})
@@ -2594,7 +2599,7 @@ var _ = Describe("Image Service Test", func() {
 			}
 			err := db.DB.Create(&expectedRepo).Error
 			Expect(err).ToNot(HaveOccurred())
-			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+			mockRepoBuilder.EXPECT().ImportRepo(ctx, gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
 			_, err = service.CreateRepoForImage(context.Background(), image)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -2608,7 +2613,7 @@ var _ = Describe("Image Service Test", func() {
 			}
 			err := db.DB.Create(&expectedRepo).Error
 			Expect(err).ToNot(HaveOccurred())
-			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+			mockRepoBuilder.EXPECT().ImportRepo(ctx, gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
 			_, err = service.CreateRepoForImage(context.Background(), image)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -2621,7 +2626,7 @@ var _ = Describe("Image Service Test", func() {
 				PulpStatus: models.RepoStatusError,
 			}
 			expectedError := errors.New("No repo has been created")
-			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, expectedError)
+			mockRepoBuilder.EXPECT().ImportRepo(ctx, gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, expectedError)
 			_, err := service.CreateRepoForImage(context.Background(), image)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(expectedError))
@@ -2749,7 +2754,7 @@ var _ = Describe("Image Service Test", func() {
 		// for CreateInstallerForImage successfully test (when feature.ImageCreateISOEDA is disabled), please look at TestCreateInstallerForImageSuccessful
 
 		It("should run ComposeInstaller successfully and run GetInstallerStatus fails", func() {
-			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+			mockImageBuilderClient.EXPECT().ComposeInstaller(ctx, image).Return(image, nil)
 			expectedError := errors.New("expected installer status error")
 			mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(
 				func(builderImage *models.Image) (*models.Image, error) {
@@ -2771,7 +2776,7 @@ var _ = Describe("Image Service Test", func() {
 
 		It("should return error when ComposeInstaller fails", func() {
 			expectedError := errors.New("expected ComposeInstaller error")
-			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(nil, expectedError)
+			mockImageBuilderClient.EXPECT().ComposeInstaller(ctx, image).Return(nil, expectedError)
 
 			_, err := service.CreateInstallerForImage(context.Background(), image)
 			Expect(err).To(HaveOccurred())
@@ -2779,7 +2784,7 @@ var _ = Describe("Image Service Test", func() {
 		})
 
 		It("should not restore a deleted image when building", func() {
-			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+			mockImageBuilderClient.EXPECT().ComposeInstaller(ctx, image).Return(image, nil)
 			mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(func(builderImage *models.Image) (*models.Image, error) {
 				builderImage.Installer.Status = models.ImageStatusBuilding
 				builderImage.Status = models.ImageStatusBuilding
@@ -2808,6 +2813,7 @@ var _ = Describe("Image Service Test", func() {
 
 func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 	g := NewGomegaWithT(t)
+	ctx := context.Background()
 
 	currentDir, err := os.Getwd()
 	g.Expect(err).ToNot(HaveOccurred())
@@ -2856,7 +2862,7 @@ func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+	mockImageBuilderClient.EXPECT().ComposeInstaller(ctx, image).Return(image, nil)
 	mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(func(builderImage *models.Image) (*models.Image, error) {
 		// simulate that Installer status was successful and set the appropriate statuses and data
 		builderImage.Status = models.ImageStatusSuccess

@@ -372,7 +372,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				"public-read",
 			).Return(expectedRepoURL, nil)
 
-			repo, err := repoBuilder.ImportRepo(commit.Repo)
+			repo, err := repoBuilder.ImportRepo(ctx, commit.Repo)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(repo).ToNot(BeNil())
 			Expect(repo.URL).To(Equal(expectedRepoURL))
@@ -380,7 +380,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		})
 
 		It("should return error when repo commit not found", func() {
-			_, err := repoBuilder.ImportRepo(&models.Repo{Model: models.Model{ID: 99999999999}})
+			_, err := repoBuilder.ImportRepo(ctx, &models.Repo{Model: models.Model{ID: 99999999999}})
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(gorm.ErrRecordNotFound))
 		})
@@ -391,7 +391,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetDownloader().Return(mockDownloader)
 			mockDownloader.EXPECT().DownloadToPath(commit.ImageBuildTarURL, repoTarFilePath).Return(expectedError)
 
-			_, err := repoBuilder.ImportRepo(commit.Repo)
+			_, err := repoBuilder.ImportRepo(ctx, commit.Repo)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error downloading repo"))
 		})
@@ -406,7 +406,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetUploader().Return(mockUploader)
 			mockUploader.EXPECT().UploadFile(repoTarFilePath, expectedUploadPath).Return("", expectedError)
 
-			_, err := repoBuilder.ImportRepo(commit.Repo)
+			_, err := repoBuilder.ImportRepo(ctx, commit.Repo)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
@@ -425,7 +425,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetExtractor().Return(mockExtractor)
 			mockExtractor.EXPECT().Extract(gomock.AssignableToTypeOf(&os.File{}), repoWorkPath).Return(expectedError)
 
-			_, err := repoBuilder.ImportRepo(commit.Repo)
+			_, err := repoBuilder.ImportRepo(ctx, commit.Repo)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
@@ -451,7 +451,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				"public-read",
 			).Return("", expectedError)
 
-			_, err := repoBuilder.ImportRepo(commit.Repo)
+			_, err := repoBuilder.ImportRepo(ctx, commit.Repo)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
@@ -541,7 +541,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				"private",
 			).Return(expectedRepoURL, nil)
 
-			updateTransaction, err := repoBuilder.BuildUpdateRepo(update.ID)
+			updateTransaction, err := repoBuilder.BuildUpdateRepo(ctx, update.ID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(updateTransaction).ToNot(BeNil())
 			Expect(updateTransaction.Repo.URL).To(Equal(expectedRepoURL))
@@ -549,7 +549,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		})
 
 		It("should return error when update does not exist", func() {
-			_, err := repoBuilder.BuildUpdateRepo(999999999)
+			_, err := repoBuilder.BuildUpdateRepo(ctx, 999999999)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(services.UpdateNotFoundErrorMsg))
 		})
@@ -559,7 +559,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			err := db.DB.Create(update).Error
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = repoBuilder.BuildUpdateRepo(update.ID)
+			_, err = repoBuilder.BuildUpdateRepo(ctx, update.ID)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("invalid models.UpdateTransaction.Commit Provided: nil pointer"))
 		})
@@ -577,7 +577,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			err := db.DB.Create(update).Error
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = repoBuilder.BuildUpdateRepo(update.ID)
+			_, err = repoBuilder.BuildUpdateRepo(ctx, update.ID)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("repo unavailable"))
 		})
@@ -588,7 +588,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetDownloader().Return(mockDownloader)
 			mockDownloader.EXPECT().DownloadToPath(update.Commit.ImageBuildTarURL, repoTarFilePath).Return(expectedError)
 
-			_, err := repoBuilder.BuildUpdateRepo(update.ID)
+			_, err := repoBuilder.BuildUpdateRepo(ctx, update.ID)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
@@ -602,7 +602,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetExtractor().Return(mockExtractor)
 			mockExtractor.EXPECT().Extract(gomock.AssignableToTypeOf(&os.File{}), updateWorkPath).Return(expectedError)
 
-			_, err := repoBuilder.BuildUpdateRepo(update.ID)
+			_, err := repoBuilder.BuildUpdateRepo(ctx, update.ID)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
@@ -623,7 +623,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				"private",
 			).Return("", expectedError)
 
-			_, err := repoBuilder.BuildUpdateRepo(update.ID)
+			_, err := repoBuilder.BuildUpdateRepo(ctx, update.ID)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
@@ -807,7 +807,7 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 	// set the first exec command helper mock
 	services.BuildCommand = expectedExecCalls[0].TestHelper.MockExecCommand
 
-	updateTransaction, err := repoBuilder.BuildUpdateRepo(update.ID)
+	updateTransaction, err := repoBuilder.BuildUpdateRepo(ctx, update.ID)
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(updateTransaction).ToNot(BeNil())
 	g.Expect(updateTransaction.Repo.URL).To(Equal(expectedRepoURL))
@@ -982,7 +982,7 @@ func TestBuildUpdateRepoWithOldCommitsStaticDeltaError(t *testing.T) {
 	// set the first exec command helper mock
 	services.BuildCommand = expectedExecCalls[0].TestHelper.MockExecCommand
 
-	_, err = repoBuilder.BuildUpdateRepo(update.ID)
+	_, err = repoBuilder.BuildUpdateRepo(ctx, update.ID)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(Equal(fmt.Sprintf("exit status %d", expectedExecCalls[3].ExpectedExistStatus)))
 
@@ -1105,7 +1105,7 @@ func TestBuildUpdateRepoWithOldCommitsCommitTarExtractError(t *testing.T) {
 
 	// we do not expect any command to be run
 
-	_, err = repoBuilder.BuildUpdateRepo(update.ID)
+	_, err = repoBuilder.BuildUpdateRepo(ctx, update.ID)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err).To(Equal(expectedOldCommitRepoExtractError))
 }
@@ -1218,7 +1218,7 @@ func TestBuildUpdateRepoWithOldCommitsCommitTarDownloadError(t *testing.T) {
 
 	// we do not expect any exec.Command to be run
 
-	_, err = repoBuilder.BuildUpdateRepo(update.ID)
+	_, err = repoBuilder.BuildUpdateRepo(ctx, update.ID)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring(expectedOldCommitRepoDownloadError.Error()))
 }

@@ -713,7 +713,9 @@ var _ = Describe("Image Builder Client Test", func() {
 			},
 			Installer: &models.Installer{},
 		}
-		img, err := client.ComposeInstaller(img)
+		ctx := context.Background()
+
+		img, err := client.ComposeInstaller(ctx, img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
@@ -750,7 +752,9 @@ var _ = Describe("Image Builder Client Test", func() {
 			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
 			Installer:    &installer,
 		}
-		img, err := client.ComposeInstaller(img)
+
+		ctx := context.Background()
+		img, err := client.ComposeInstaller(ctx, img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
@@ -787,7 +791,9 @@ var _ = Describe("Image Builder Client Test", func() {
 			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
 			Installer:    &installer,
 		}
-		img, err := client.ComposeInstaller(img)
+		ctx := context.Background()
+
+		img, err := client.ComposeInstaller(ctx, img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
@@ -831,7 +837,10 @@ var _ = Describe("Image Builder Client Test", func() {
 			Installer:     &installer,
 			ActivationKey: "test-key",
 		}
-		img, err := client.ComposeInstaller(img)
+
+		ctx := context.Background()
+
+		img, err := client.ComposeInstaller(ctx, img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
@@ -866,7 +875,9 @@ var _ = Describe("Image Builder Client Test", func() {
 			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
 			Installer:    &installer,
 		}
-		img, err := client.ComposeInstaller(img)
+
+		ctx := context.Background()
+		img, err := client.ComposeInstaller(ctx, img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
@@ -999,7 +1010,8 @@ var _ = Describe("Image Builder Client Test", func() {
 			defer ts.Close()
 			config.Get().ImageBuilderConfig.URL = ts.URL
 
-			image, err := client.ComposeInstaller(&img)
+			ctx := context.Background()
+			image, err := client.ComposeInstaller(ctx, &img)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(image).ToNot(BeNil())
 			Expect(image.Installer.ComposeJobID).To(Equal(composeJobID))

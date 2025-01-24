@@ -385,7 +385,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(ctx, gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
 
 				rr := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)
@@ -433,7 +433,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(ctx, gomock.Any(), orgID, gomock.Any()).Return(&updateTransactions, nil)
 				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
@@ -453,7 +453,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(ctx, gomock.Any(), orgID, gomock.Any()).Return(&updateTransactions, nil)
 				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
@@ -632,7 +632,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 				var desiredCommit models.Commit
 				db.DB.First(&desiredCommit, &commits[2].ID)
-				mockUpdateService.EXPECT().BuildUpdateTransactions(&models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[2].ID},
+				mockUpdateService.EXPECT().BuildUpdateTransactions(ctx, &models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[2].ID},
 					orgID, &desiredCommit).
 					Return(&[]models.UpdateTransaction{}, nil)
 				rr := httptest.NewRecorder()
@@ -658,7 +658,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 				var desiredCommit models.Commit
 				db.DB.First(&desiredCommit, &commits[3].ID)
-				mockUpdateService.EXPECT().BuildUpdateTransactions(&models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[3].ID},
+				mockUpdateService.EXPECT().BuildUpdateTransactions(ctx, &models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[3].ID},
 					orgID, &desiredCommit).
 					Return(&[]models.UpdateTransaction{}, nil)
 

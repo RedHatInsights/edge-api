@@ -5,6 +5,7 @@
 package mock_imagebuilder
 
 import (
+	context "context"
 	http "net/http"
 	reflect "reflect"
 
@@ -51,18 +52,18 @@ func (mr *MockClientInterfaceMockRecorder) ComposeCommit(image interface{}) *gom
 }
 
 // ComposeInstaller mocks base method.
-func (m *MockClientInterface) ComposeInstaller(image *models.Image) (*models.Image, error) {
+func (m *MockClientInterface) ComposeInstaller(ctx context.Context, image *models.Image) (*models.Image, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ComposeInstaller", image)
+	ret := m.ctrl.Call(m, "ComposeInstaller", ctx, image)
 	ret0, _ := ret[0].(*models.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ComposeInstaller indicates an expected call of ComposeInstaller.
-func (mr *MockClientInterfaceMockRecorder) ComposeInstaller(image interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) ComposeInstaller(ctx, image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComposeInstaller", reflect.TypeOf((*MockClientInterface)(nil).ComposeInstaller), image)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComposeInstaller", reflect.TypeOf((*MockClientInterface)(nil).ComposeInstaller), ctx, image)
 }
 
 // GetCommitStatus mocks base method.
