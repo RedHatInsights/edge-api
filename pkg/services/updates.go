@@ -36,9 +36,9 @@ import (
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to an edge device
 type UpdateServiceInterface interface {
-	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
-	BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error)
-	CreateUpdate(id uint) (*models.UpdateTransaction, error)
+	BuildUpdateTransactions(ctx context.Context, devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
+	BuildUpdateRepo(ctx context.Context, orgID string, updateID uint) (*models.UpdateTransaction, error)
+	CreateUpdate(ctx context.Context, id uint) (*models.UpdateTransaction, error)
 	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
@@ -158,7 +158,7 @@ func (s *UpdateService) CreateUpdateAsync(id uint) {
 }
 
 func (s *UpdateService) createUpdate(ctx context.Context, updateID uint) {
-	_, err := s.CreateUpdate(updateID)
+	_, err := s.CreateUpdate(ctx, updateID)
 	if err != nil {
 		log.WithContext(ctx).WithFields(log.Fields{"updateID": updateID, "error": err.Error()}).Error("error occurred when creating update")
 	}
@@ -200,7 +200,7 @@ func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(intCtx context.Conte
 }
 
 // CreateUpdate is the function that creates an update transaction
-func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
+func (s *UpdateService) CreateUpdate(ctx context.Context, id uint) (*models.UpdateTransaction, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("error getting context orgID")
@@ -221,7 +221,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		return nil, result.Error
 	}
 
-	update, err = s.BuildUpdateRepo(orgID, id)
+	update, err = s.BuildUpdateRepo(ctx, orgID, id)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("error when building update repo")
 		return nil, err
@@ -246,7 +246,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
-	remoteInfo := NewTemplateRemoteInfo(update)
+	remoteInfo := NewTemplateRemoteInfo(ctx, update)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
@@ -346,9 +346,9 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 }
 
 // NewTemplateRemoteInfo contains the info for the ostree remote file to be written to the system
-func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
+func NewTemplateRemoteInfo(ctx context.Context, update *models.UpdateTransaction) TemplateRemoteInfo {
 
-	updateURL := update.Repo.DistributionURL()
+	updateURL := update.Repo.DistributionURL(ctx)
 
 	return TemplateRemoteInfo{
 		RemoteURL:           updateURL,
@@ -362,7 +362,7 @@ func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo 
 }
 
 // BuildUpdateRepo determines if a static delta is necessary and calls the repo builder
-func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
+func (s *UpdateService) BuildUpdateRepo(ctx context.Context, orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
 
 	// grab the update transaction from db based on the updateID
@@ -382,14 +382,14 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		return nil, result.Error
 	}
 
-	update, err := s.generateStaticDelta(updateID, update)
+	update, err := s.generateStaticDelta(ctx, updateID, update)
 
 	s.log.WithField("updateTransaction", update).Info("UPGRADE: static delta generated")
 
 	return update, err
 }
 
-func (s *UpdateService) generateStaticDelta(updateID uint, update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (s *UpdateService) generateStaticDelta(ctx context.Context, updateID uint, update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
 	var err error
 	// setup a context and signal for SIGTERM
 	intctx, intcancel := context.WithCancel(context.Background())
@@ -408,7 +408,7 @@ func (s *UpdateService) generateStaticDelta(updateID uint, update *models.Update
 
 	updateRepoID := update.RepoID
 	s.log.WithField("update_id", updateID).Info("UPGRADE: repobuilder starting")
-	update, err = s.RepoBuilder.BuildUpdateRepo(updateID)
+	update, err = s.RepoBuilder.BuildUpdateRepo(ctx, updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		// set status to error
@@ -858,7 +858,7 @@ func (s *UpdateService) InventoryGroupDevicesUpdateInfo(orgID string, inventoryG
 }
 
 // BuildUpdateTransactions creates the update transaction to be sent to Playbook Dispatcher
-func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
+func (s *UpdateService) BuildUpdateTransactions(ctx context.Context, devicesUpdate *models.DevicesUpdate,
 	orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	var inv inventory.Response
 	var ii []inventory.Response
@@ -1016,7 +1016,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 						return nil, result.Error
 					}
 					s.log.WithFields(log.Fields{
-						"repoURL": repo.DistributionURL(),
+						"repoURL": repo.DistributionURL(ctx),
 						"repoID":  repo.ID,
 					}).Debug("Getting repo info")
 				}

@@ -2,6 +2,7 @@
 package models
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -38,6 +39,7 @@ func TestCommitsBeforeCreate(t *testing.T) {
 }
 
 func TestDistributionURL(t *testing.T) {
+	ctx := context.Background()
 	var awsURL = "https://aws.repo.example.com/repo/is/here"
 	var pulpURL = "https://pulp.distribution.example.com/api/pulp-content/pulp/repo/is/here"
 	repo := Repo{
@@ -53,7 +55,7 @@ func TestDistributionURL(t *testing.T) {
 		os.Unsetenv("FEATURE_PULP_INTEGRATION")
 		os.Unsetenv("PULP_CONTENT_URL")
 
-		assert.Equal(t, awsURL, repo.DistributionURL())
+		assert.Equal(t, awsURL, repo.DistributionURL(ctx))
 	})
 
 	t.Run("return pulp distribution url", func(t *testing.T) {
@@ -62,11 +64,13 @@ func TestDistributionURL(t *testing.T) {
 		os.Setenv("FEATURE_PULP_INTEGRATION", "true")
 		os.Setenv("PULP_CONTENT_URL", "http://internal.repo.example.com:8080")
 
-		assert.Equal(t, pulpURL, repo.DistributionURL())
+		assert.Equal(t, pulpURL, repo.DistributionURL(ctx))
 	})
 }
 
 func TestContentURL(t *testing.T) {
+	ctx := context.Background()
+
 	var awsURL = "https://aws.repo.example.com/repo/is/here"
 	var pulpURL = "https://pulp.distribution.example.com:3030/api/pulp-content/pulp/repo/is/here"
 	repo := Repo{
@@ -84,7 +88,7 @@ func TestContentURL(t *testing.T) {
 
 		var expectedURL = "https://internal.repo.example.com:8080/api/pulp-content/pulp/repo/is/here"
 
-		assert.Equal(t, expectedURL, repo.ContentURL())
+		assert.Equal(t, expectedURL, repo.ContentURL(ctx))
 	})
 
 	t.Run("return aws content url", func(t *testing.T) {
@@ -95,6 +99,6 @@ func TestContentURL(t *testing.T) {
 
 		var expectedURL = "https://aws.repo.example.com/repo/is/here"
 
-		assert.Equal(t, expectedURL, repo.ContentURL())
+		assert.Equal(t, expectedURL, repo.ContentURL(ctx))
 	})
 }

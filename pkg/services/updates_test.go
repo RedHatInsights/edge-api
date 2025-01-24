@@ -34,6 +34,8 @@ import (
 )
 
 var _ = Describe("UpdateService Basic functions", func() {
+	ctx := context.Background()
+
 	f, _ := os.Getwd()
 	templatesPath := fmt.Sprintf("%s/../templates/", filepath.Dir(f))
 	Describe("creation of the service", func() {
@@ -318,8 +320,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			When("when build repo fail", func() {
 				It("should return error when can't build repo", func() {
 					expectedError := errors.New("error building repo")
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, expectedError)
-					actual, err := updateService.CreateUpdate(update.ID)
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(ctx, update.ID).Return(nil, expectedError)
+					actual, err := updateService.CreateUpdate(ctx, update.ID)
 
 					Expect(err).To(HaveOccurred())
 					Expect(err).To(MatchError(expectedError))
@@ -339,7 +341,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(ctx, update.ID).Return(&update, nil)
 					mockUploader := mock_services.NewMockUploader(ctrl)
 					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
 					mockFilesService.EXPECT().GetUploader().Return(mockUploader)
@@ -359,7 +361,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 						},
 					}, nil)
 
-					updateTransaction, err := updateService.CreateUpdate(update.ID)
+					updateTransaction, err := updateService.CreateUpdate(ctx, update.ID)
 
 					Expect(err).To(BeNil())
 					Expect(updateTransaction).ToNot(BeNil())
@@ -385,7 +387,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(ctx, update.ID).Return(&update, nil)
 					mockUploader := mock_services.NewMockUploader(ctrl)
 					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
 					mockFilesService.EXPECT().GetUploader().Return(mockUploader)
@@ -405,7 +407,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 						},
 					}, nil)
 
-					updateTransaction, err := updateService.CreateUpdate(update.ID)
+					updateTransaction, err := updateService.CreateUpdate(ctx, update.ID)
 					Expect(updateTransaction).ToNot(BeNil())
 					Expect(err).To(BeNil())
 					Expect(updateTransaction).ToNot(BeNil())
@@ -430,7 +432,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(ctx, update.ID).Return(&update, nil)
 					mockUploader := mock_services.NewMockUploader(ctrl)
 					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
 					mockFilesService.EXPECT().GetUploader().Return(mockUploader)
@@ -444,7 +446,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 						Principal:    common.DefaultPrincipal,
 					}).Return(nil, errors.New("error on playbook dispatcher client"))
 
-					_, err := updateService.CreateUpdate(update.ID)
+					_, err := updateService.CreateUpdate(ctx, update.ID)
 
 					Expect(err).ShouldNot(BeNil())
 
@@ -1020,7 +1022,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &latestCommit)
+				upd, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, orgID, &latestCommit)
 				Expect(err).To(BeNil())
 				Expect(upd).ToNot(BeNil())
 				Expect(len(*upd) > 0).To(BeTrue())
@@ -1127,7 +1129,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &latestCommit)
+				upd, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, orgID, &latestCommit)
 				Expect(err).To(BeNil())
 				Expect(upd).ToNot(BeNil())
 				Expect(len(*upd) > 0).To(BeTrue())
@@ -1228,7 +1230,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
+				upd, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeTrue())
@@ -1332,7 +1334,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
+				upd, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeFalse())
@@ -1417,7 +1419,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
@@ -1448,7 +1450,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, orgID, &newCommit)
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ChangesRefs).To(BeFalse())
@@ -1478,7 +1480,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &newCommit2)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, orgID, &newCommit2)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ChangesRefs).To(BeTrue())
@@ -1499,7 +1501,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
@@ -1537,7 +1539,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil).Times(2)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(2))
@@ -1570,7 +1572,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(0))
@@ -1586,7 +1588,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, errors.New(""))
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(ctx, &devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err.(apiError.APIError).GetStatus()).To(Equal(404))
 				Expect(updates).Should(BeNil())
@@ -1611,12 +1613,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		It("should return template with gpg false", func() {
 			config.Get().GpgVerify = "false"
-			remoteInfo := services.NewTemplateRemoteInfo(update)
+			remoteInfo := services.NewTemplateRemoteInfo(ctx, update)
 			Expect(remoteInfo.GpgVerify).To(Equal("false"))
 		})
 		It("should return template with gpg true", func() {
 			config.Get().GpgVerify = "true"
-			remoteInfo := services.NewTemplateRemoteInfo(update)
+			remoteInfo := services.NewTemplateRemoteInfo(ctx, update)
 			Expect(remoteInfo.GpgVerify).To(Equal("true"))
 
 		})

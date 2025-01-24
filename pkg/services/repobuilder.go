@@ -29,9 +29,9 @@ var BuildCommand = exec.Command
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
-	StoreRepo(context.Context, *models.Repo) (*models.Repo, error)
-	ImportRepo(r *models.Repo) (*models.Repo, error)
+	BuildUpdateRepo(ctx context.Context, id uint) (*models.UpdateTransaction, error)
+	StoreRepo(ctx context.Context, repo *models.Repo) (*models.Repo, error)
+	ImportRepo(ctx context.Context, r *models.Repo) (*models.Repo, error)
 	CommitTarDownload(c *models.Commit, dest string) (string, error)
 	CommitTarExtract(c *models.Commit, tarFileName string, dest string) error
 	CommitTarUpload(c *models.Commit, tarFileName string) error
@@ -61,7 +61,7 @@ func NewRepoBuilder(ctx context.Context, log log.FieldLogger) RepoBuilderInterfa
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
+func (rb *RepoBuilder) BuildUpdateRepo(ctx context.Context, id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
 	if err := db.DB.Preload("DispatchRecords").
 		Preload("Devices").
@@ -350,11 +350,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		if err != nil {
 			return nil, err
 		}
-		update.Repo.URL = updateCommit.Repo.ContentURL()
+		update.Repo.URL = updateCommit.Repo.ContentURL(ctx)
 		rb.log.WithField("update_transaction", update).Info("UPGRADE: point update to commit repo")
 	}
 
-	rb.log.WithField("repo", update.Repo.ContentURL()).Info("Update repo URL")
+	rb.log.WithField("repo", update.Repo.ContentURL(ctx)).Info("Update repo URL")
 	update.Repo.Status = models.RepoStatusSuccess
 	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 		return nil, err
@@ -402,7 +402,7 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 }
 
 // ImportRepo (unpack and upload) a single repo
-func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
+func (rb *RepoBuilder) ImportRepo(ctx context.Context, r *models.Repo) (*models.Repo, error) {
 	var cmt models.Commit
 	cmtDB := db.DB.Where("repo_id = ?", r.ID).First(&cmt)
 	if cmtDB.Error != nil {
@@ -473,7 +473,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
 
-	logURL, _ := url.Parse(r.DistributionURL())
+	logURL, _ := url.Parse(r.DistributionURL(ctx))
 	rb.log.WithField("repo_url", logURL.Redacted()).Info("Commit stored in AWS OSTree repo")
 
 	return r, nil

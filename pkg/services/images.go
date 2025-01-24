@@ -43,7 +43,7 @@ import (
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image) error
 	ProcessImage(ctx context.Context, img *models.Image, handleInterruptSignal bool) error
-	UpdateImage(image *models.Image, previousImage *models.Image) error
+	UpdateImage(ctx context.Context, image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -488,7 +488,7 @@ func (s *ImageService) getLatestPreviousSuccessfulImage(image *models.Image) (*m
 }
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
-func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
+func (s *ImageService) UpdateImage(ctx context.Context, image *models.Image, previousImage *models.Image) error {
 	s.log.Info("Updating image...")
 	if previousImage == nil {
 		return new(ImageNotFoundError)
@@ -581,7 +581,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 				return err
 			}
 			// NOTE: this is storing the URL of the parent commit instead of the DBID of the parent commit
-			image.Commit.OSTreeParentCommit = repo.ContentURL()
+			image.Commit.OSTreeParentCommit = repo.ContentURL(ctx)
 
 			image.Commit.Repo = &models.Repo{
 				PulpID:  repo.PulpID,
@@ -887,7 +887,7 @@ func (s *ImageService) runPulpRepoProcess(ctx context.Context, repo *models.Repo
 	return repo, nil
 }
 
-func (s *ImageService) runAWSRepoProcess(repo *models.Repo) (*models.Repo, error) {
+func (s *ImageService) runAWSRepoProcess(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
 	repo.Status = models.RepoStatusBuilding
 	result := db.DB.Save(&repo)
 	if result.Error != nil {
@@ -895,7 +895,7 @@ func (s *ImageService) runAWSRepoProcess(repo *models.Repo) (*models.Repo, error
 		return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
 
-	repo, err := s.RepoBuilder.ImportRepo(repo)
+	repo, err := s.RepoBuilder.ImportRepo(ctx, repo)
 	if err != nil {
 		repo.Status = models.RepoStatusError
 		result := db.DB.Save(&repo)
@@ -926,7 +926,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 
 	var err error
 	// Pulp repo process needs to run if AWS repo process is disabled (flag set true)
-	if feature.PulpIntegration.IsEnabled() || feature.PulpIntegrationDisableAWSRepoStore.IsEnabled() {
+	if feature.PulpIntegration.IsEnabledCtx(ctx) || feature.PulpIntegrationDisableAWSRepoStore.IsEnabledCtx(ctx) {
 		s.log.Info("Running Pulp repo process")
 		repo, err = s.runPulpRepoProcess(ctx, repo)
 		if err != nil {
@@ -937,9 +937,9 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	}
 
 	// set feature flag true to only test Pulp (flag not created in Unleash and defaults to false)
-	if !feature.PulpIntegrationDisableAWSRepoStore.IsEnabled() {
+	if !feature.PulpIntegrationDisableAWSRepoStore.IsEnabledCtx(ctx) {
 		s.log.Info("Running AWS repo process")
-		repo, err = s.runAWSRepoProcess(repo)
+		repo, err = s.runAWSRepoProcess(ctx, repo)
 		if err != nil {
 			return repo, err
 		}
@@ -1719,7 +1719,7 @@ func (s *ImageService) CreateInstallerForImage(ctx context.Context, image *model
 		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return nil, tx.Error
 	}
-	image, err := s.ImageBuilder.ComposeInstaller(image)
+	image, err := s.ImageBuilder.ComposeInstaller(ctx, image)
 	if err != nil {
 		return nil, err
 	}

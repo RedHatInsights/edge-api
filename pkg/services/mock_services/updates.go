@@ -5,6 +5,7 @@
 package mock_services
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -37,48 +38,48 @@ func (m *MockUpdateServiceInterface) EXPECT() *MockUpdateServiceInterfaceMockRec
 }
 
 // BuildUpdateRepo mocks base method.
-func (m *MockUpdateServiceInterface) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
+func (m *MockUpdateServiceInterface) BuildUpdateRepo(ctx context.Context, orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BuildUpdateRepo", orgID, updateID)
+	ret := m.ctrl.Call(m, "BuildUpdateRepo", ctx, orgID, updateID)
 	ret0, _ := ret[0].(*models.UpdateTransaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BuildUpdateRepo indicates an expected call of BuildUpdateRepo.
-func (mr *MockUpdateServiceInterfaceMockRecorder) BuildUpdateRepo(orgID, updateID interface{}) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) BuildUpdateRepo(ctx, orgID, updateID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateRepo", reflect.TypeOf((*MockUpdateServiceInterface)(nil).BuildUpdateRepo), orgID, updateID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateRepo", reflect.TypeOf((*MockUpdateServiceInterface)(nil).BuildUpdateRepo), ctx, orgID, updateID)
 }
 
 // BuildUpdateTransactions mocks base method.
-func (m *MockUpdateServiceInterface) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
+func (m *MockUpdateServiceInterface) BuildUpdateTransactions(ctx context.Context, devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BuildUpdateTransactions", devicesUpdate, orgID, commit)
+	ret := m.ctrl.Call(m, "BuildUpdateTransactions", ctx, devicesUpdate, orgID, commit)
 	ret0, _ := ret[0].(*[]models.UpdateTransaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BuildUpdateTransactions indicates an expected call of BuildUpdateTransactions.
-func (mr *MockUpdateServiceInterfaceMockRecorder) BuildUpdateTransactions(devicesUpdate, orgID, commit interface{}) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) BuildUpdateTransactions(ctx, devicesUpdate, orgID, commit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateTransactions", reflect.TypeOf((*MockUpdateServiceInterface)(nil).BuildUpdateTransactions), devicesUpdate, orgID, commit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateTransactions", reflect.TypeOf((*MockUpdateServiceInterface)(nil).BuildUpdateTransactions), ctx, devicesUpdate, orgID, commit)
 }
 
 // CreateUpdate mocks base method.
-func (m *MockUpdateServiceInterface) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
+func (m *MockUpdateServiceInterface) CreateUpdate(ctx context.Context, id uint) (*models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUpdate", id)
+	ret := m.ctrl.Call(m, "CreateUpdate", ctx, id)
 	ret0, _ := ret[0].(*models.UpdateTransaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateUpdate indicates an expected call of CreateUpdate.
-func (mr *MockUpdateServiceInterfaceMockRecorder) CreateUpdate(id interface{}) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) CreateUpdate(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUpdate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).CreateUpdate), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUpdate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).CreateUpdate), ctx, id)
 }
 
 // CreateUpdateAsync mocks base method.

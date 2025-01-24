@@ -28,7 +28,7 @@ import (
 // ClientInterface is an Interface to make request to ImageBuilder
 type ClientInterface interface {
 	ComposeCommit(image *models.Image) (*models.Image, error)
-	ComposeInstaller(image *models.Image) (*models.Image, error)
+	ComposeInstaller(ctx context.Context, image *models.Image) (*models.Image, error)
 	GetCommitStatus(image *models.Image) (*models.Image, error)
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
@@ -345,7 +345,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 }
 
 // ComposeInstaller composes an Installer on ImageBuilder
-func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
+func (c *Client) ComposeInstaller(ctx context.Context, image *models.Image) (*models.Image, error) {
 	c.log.Debug("COMPOSING INSTALLER")
 
 	pkgs := make([]string, 0)
@@ -359,8 +359,8 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		rhsm = false
 	}
 
-	if feature.PulpIntegration.IsEnabled() && image.Commit.Repo.PulpURL != "" {
-		repoURL = image.Commit.Repo.ContentURL()
+	if feature.PulpIntegration.IsEnabledCtx(ctx) && image.Commit.Repo.ContentURL(ctx) != "" {
+		repoURL = image.Commit.Repo.ContentURL(ctx)
 		parsedURL, _ := url.Parse(repoURL)
 		c.log.WithField("redacted_url", parsedURL.Redacted()).Debug("Using Pulp repo URL for ISO installer request")
 	}

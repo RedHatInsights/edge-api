@@ -880,7 +880,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// should be refactored to avoid performance issue with large volume
-	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, orgID, commit)
+	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(r.Context(), &devicesUpdate, orgID, commit)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":  err.Error(),

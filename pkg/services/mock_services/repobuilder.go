@@ -36,18 +36,18 @@ func (m *MockRepoBuilderInterface) EXPECT() *MockRepoBuilderInterfaceMockRecorde
 }
 
 // BuildUpdateRepo mocks base method.
-func (m *MockRepoBuilderInterface) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
+func (m *MockRepoBuilderInterface) BuildUpdateRepo(ctx context.Context, id uint) (*models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BuildUpdateRepo", id)
+	ret := m.ctrl.Call(m, "BuildUpdateRepo", ctx, id)
 	ret0, _ := ret[0].(*models.UpdateTransaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BuildUpdateRepo indicates an expected call of BuildUpdateRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) BuildUpdateRepo(id interface{}) *gomock.Call {
+func (mr *MockRepoBuilderInterfaceMockRecorder) BuildUpdateRepo(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).BuildUpdateRepo), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).BuildUpdateRepo), ctx, id)
 }
 
 // CommitTarDelete mocks base method.
@@ -108,18 +108,18 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) CommitTarUpload(c, tarFileName i
 }
 
 // ImportRepo mocks base method.
-func (m *MockRepoBuilderInterface) ImportRepo(r *models.Repo) (*models.Repo, error) {
+func (m *MockRepoBuilderInterface) ImportRepo(ctx context.Context, r *models.Repo) (*models.Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ImportRepo", r)
+	ret := m.ctrl.Call(m, "ImportRepo", ctx, r)
 	ret0, _ := ret[0].(*models.Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ImportRepo indicates an expected call of ImportRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) ImportRepo(r interface{}) *gomock.Call {
+func (mr *MockRepoBuilderInterfaceMockRecorder) ImportRepo(ctx, r interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).ImportRepo), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).ImportRepo), ctx, r)
 }
 
 // RepoPullLocalStaticDeltas mocks base method.
@@ -137,16 +137,16 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) RepoPullLocalStaticDeltas(u, o, 
 }
 
 // StoreRepo mocks base method.
-func (m *MockRepoBuilderInterface) StoreRepo(arg0 context.Context, arg1 *models.Repo) (*models.Repo, error) {
+func (m *MockRepoBuilderInterface) StoreRepo(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreRepo", arg0, arg1)
+	ret := m.ctrl.Call(m, "StoreRepo", ctx, repo)
 	ret0, _ := ret[0].(*models.Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // StoreRepo indicates an expected call of StoreRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) StoreRepo(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockRepoBuilderInterfaceMockRecorder) StoreRepo(ctx, repo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).StoreRepo), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).StoreRepo), ctx, repo)
 }
