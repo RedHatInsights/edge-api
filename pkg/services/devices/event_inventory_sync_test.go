@@ -4,19 +4,20 @@ package devices_test
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	eventReq "github.com/redhatinsights/edge-api/pkg/services/devices"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Event Inventory sync Event Test", func() {
@@ -24,13 +25,14 @@ var _ = Describe("Event Inventory sync Event Test", func() {
 	var mockDeviceService *mock_services.MockDeviceServiceInterface
 	var ctrl *gomock.Controller
 	var logBuffer bytes.Buffer
-	var testLog *log.Entry
+	oldLog := log.Default()
+
 	BeforeEach(func() {
+		logBuffer.Reset()
+		testLog := log.NewProxyFor(slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		log.SetDefault(testLog)
+
 		ctrl = gomock.NewController(GinkgoT())
-		testLog = log.NewEntry(log.StandardLogger())
-		// Set the output to use our new local logBuffer
-		logBuffer = bytes.Buffer{}
-		testLog.Logger.SetOutput(&logBuffer)
 		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
 		ctx = context.Background()
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
@@ -40,6 +42,7 @@ var _ = Describe("Event Inventory sync Event Test", func() {
 	})
 	AfterEach(func() {
 		ctrl.Finish()
+		log.SetDefault(oldLog)
 	})
 	Describe("consume inventory sync event", func() {
 		When("inventory sync is requested", func() {

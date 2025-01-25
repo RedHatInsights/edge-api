@@ -17,7 +17,7 @@ import (
 
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"gorm.io/gorm"
 )
 

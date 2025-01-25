@@ -14,7 +14,7 @@ import (
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 // ConsumerService is the interface that takes care of our consumer implementation

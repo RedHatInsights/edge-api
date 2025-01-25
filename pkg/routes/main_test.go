@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/Unleash/unleash-client-go/v4"
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	mockUnleash "github.com/redhatinsights/edge-api/unleash"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )

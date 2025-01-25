@@ -4,10 +4,10 @@ package devices
 import (
 	"context"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
-	log "github.com/sirupsen/logrus"
 )
 
 type EventDeviceSyncHandlerDummy struct {

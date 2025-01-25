@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 

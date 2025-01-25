@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
@@ -22,7 +23,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
@@ -31,19 +32,19 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 	var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 	var ctrl *gomock.Controller
 	var logBuffer bytes.Buffer
-	var testLog *log.Entry
 	var updateTransaction models.UpdateTransaction
 	var ident identity.XRHID
 	orgID := common.DefaultOrgID
+	oldLog := log.Default()
 
 	BeforeEach(func() {
+		logBuffer.Reset()
+		testLog := log.NewProxyFor(slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		log.SetDefault(testLog)
+
 		ctrl = gomock.NewController(GinkgoT())
 		mockUpdateService = mock_services.NewMockUpdateServiceInterface(ctrl)
 		mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
-		testLog = log.NewEntry(log.StandardLogger())
-		// Set the output to use our new local logBuffer
-		logBuffer = bytes.Buffer{}
-		testLog.Logger.SetOutput(&logBuffer)
 
 		ctx = context.Background()
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
@@ -61,6 +62,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 
 	AfterEach(func() {
 		ctrl.Finish()
+		log.SetDefault(oldLog)
 	})
 
 	Describe("consume UpdateRepoRequested event", func() {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	log "github.com/osbuild/logging/pkg/logrus"
 	"github.com/redhatinsights/edge-api/pkg/jobs"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 )
 
 type NoopJob struct {

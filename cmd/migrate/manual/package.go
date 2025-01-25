@@ -2,7 +2,7 @@
 package manual
 
 import (
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 type Migration struct {

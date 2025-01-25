@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"time"
@@ -15,7 +16,7 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/Unleash/unleash-client-go/v4"
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 func initializeUnleash() {
@@ -39,18 +40,7 @@ func initializeUnleash() {
 	}
 }
 
-func initConfiguration() {
-	config.Init()
-	logger.InitLogger(os.Stdout)
-	cfg := config.Get()
-	config.LogConfigAtStartup(cfg)
-	db.InitDB()
-	initializeUnleash()
-}
-
-func cleanupAndExit(err error) {
-	// flush logger before app exit
-	logger.FlushLogger()
+func exitOnError(err error) {
 	if err != nil {
 		os.Exit(2)
 	}
@@ -58,30 +48,41 @@ func cleanupAndExit(err error) {
 }
 
 func main() {
+	ctx := context.Background()
+	config.Init()
+	cfg := config.Get()
+	err := logger.InitializeLogging(ctx, cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer logger.Flush()
 
-	initConfiguration()
+	config.LogConfigAtStartup(cfg)
+	db.InitDB()
+	initializeUnleash()
+
 	// wait for 5 seconds, for the unleash client to refresh
 	time.Sleep(5 * time.Second)
 
 	if feature.MigrateCustomRepositories.IsEnabled() {
 		log.Info("custom repositories migration started")
 		if _, err := repairrepos.RepairUrls(); err != nil {
-			cleanupAndExit(err)
+			exitOnError(err)
 			return
 		}
 
 		if err := repairrepos.RepairDuplicateImagesReposURLS(); err != nil {
-			cleanupAndExit(err)
+			exitOnError(err)
 			return
 		}
 
 		if err := repairrepos.RepairDuplicates(); err != nil {
-			cleanupAndExit(err)
+			exitOnError(err)
 			return
 		}
 
 		if err := migraterepos.MigrateAllCustomRepositories(); err != nil {
-			cleanupAndExit(err)
+			exitOnError(err)
 			return
 		}
 	} else {
@@ -91,10 +92,10 @@ func main() {
 	if feature.PostMigrateDeleteCustomRepositories.IsEnabled() {
 		log.Info("post migrate delete custom repositories start")
 		if _, err := postmigraterepos.PostMigrateDeleteCustomRepo(); err != nil {
-			cleanupAndExit(err)
+			exitOnError(err)
 			return
 		}
 	}
 
-	cleanupAndExit(nil)
+	exitOnError(nil)
 }

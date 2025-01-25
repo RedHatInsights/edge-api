@@ -12,7 +12,7 @@ import (
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
-	log "github.com/sirupsen/logrus"
+	log "github.com/osbuild/logging/pkg/logrus"
 )
 
 var _ = Describe("Inventory Client Tests", func() {

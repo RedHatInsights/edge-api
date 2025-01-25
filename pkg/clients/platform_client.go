@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/metrics"
-	"github.com/sirupsen/logrus"
 )
 
 // HTTPRequestDoer is an interface for HTTP request doer. This interface is missing
@@ -64,16 +64,16 @@ func NewPlatformClient(ctx context.Context, proxy string) HTTPRequestDoer {
 
 	if proxy != "" {
 		if clowder.IsClowderEnabled() {
-			logrus.WithContext(ctx).Warnf("Unable to use HTTP client proxy in clowder environment: %s", proxy)
+			slog.WarnContext(ctx, "Unable to use HTTP client proxy in clowder environment", "proxy", proxy)
 		} else {
-			logrus.WithContext(ctx).Debugf("Creating HTTP client with proxy %s", proxy)
+			slog.WarnContext(ctx, "Creating HTTP client with proxy", "proxy", proxy)
 			rt = &http.Transport{Proxy: http.ProxyURL(stringToURL(proxy))}
 		}
 	}
 
 	var doer HTTPRequestDoer = &http.Client{Transport: rt}
 
-	if logrus.IsLevelEnabled(logrus.TraceLevel) && config.Get().Local {
+	if slog.Default().Enabled(ctx, slog.LevelDebug) && config.Get().Local {
 		doer = &LoggingDoer{
 			ctx:  ctx,
 			doer: doer,
@@ -96,16 +96,16 @@ type LoggingDoer struct {
 
 func (d *LoggingDoer) Do(req *http.Request) (*http.Response, error) {
 	// common log data
-	log := logrus.WithContext(d.ctx).WithFields(logrus.Fields{
-		"method":          req.Method,
-		"url":             req.URL.RequestURI(),
-		"content_length":  req.ContentLength,
-		"platform_client": true,
-		"headers":         req.Header,
-	})
+	log := slog.With(
+		slog.String("method", req.Method),
+		slog.String("url", req.URL.RequestURI()),
+		slog.Int64("content_length", req.ContentLength),
+		slog.Bool("platform_client", true),
+		slog.Any("headers", req.Header),
+	)
 
 	// log request
-	if req.Body != nil && logrus.IsLevelEnabled(logrus.TraceLevel) {
+	if req.Body != nil && slog.Default().Enabled(req.Context(), slog.LevelDebug) {
 		// read request data into a byte slice
 		requestData, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -116,16 +116,16 @@ func (d *LoggingDoer) Do(req *http.Request) (*http.Response, error) {
 		req.Body = io.NopCloser(bytes.NewReader(requestData))
 
 		// log the request data
-		log.Trace(bytes.NewBuffer(requestData).String())
+		log.DebugContext(req.Context(), bytes.NewBuffer(requestData).String())
 	} else {
-		log.Tracef("Platform request with no body: %s", req.URL.RequestURI())
+		log.DebugContext(req.Context(), "Platform request with no body", "uri", req.URL.RequestURI())
 	}
 
 	// delegate the request
 	resp, doerErr := d.doer.Do(req)
 
 	// log response
-	if resp != nil && resp.Body != nil && logrus.IsLevelEnabled(logrus.TraceLevel) {
+	if resp != nil && resp.Body != nil && slog.Default().Enabled(req.Context(), slog.LevelDebug) {
 		// read response data into a byte slice
 		responseData, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -136,9 +136,9 @@ func (d *LoggingDoer) Do(req *http.Request) (*http.Response, error) {
 		resp.Body = io.NopCloser(bytes.NewReader(responseData))
 
 		// log the response data
-		log.Trace(bytes.NewBuffer(responseData).String())
+		log.DebugContext(req.Context(), bytes.NewBuffer(responseData).String())
 	} else {
-		log.Tracef("Platform response with no body: %s", req.URL.RequestURI())
+		log.DebugContext(req.Context(), "Platform response with no body", "uri", req.URL.RequestURI())
 	}
 
 	if doerErr != nil {
@@ -162,8 +162,11 @@ func (d *MetricsDoer) Do(req *http.Request) (*http.Response, error) {
 		code = strconv.Itoa(resp.StatusCode/100) + "xx"
 
 		if code != "2xx" {
-			logrus.WithContext(req.Context()).WithField("status_code", resp.StatusCode).
-				Warnf("Platform request unexpected status %d: %s %s", resp.StatusCode, req.Method, req.URL.RequestURI())
+			slog.WarnContext(req.Context(), "Platform request unexpected status",
+				"status_code", resp.StatusCode,
+				"method", req.Method,
+				"url", req.URL.RequestURI(),
+			)
 		}
 	}
 
