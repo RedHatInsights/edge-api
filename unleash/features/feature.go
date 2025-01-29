@@ -146,7 +146,7 @@ func CheckFeatureCtx(ctx context.Context, feature string, options ...unleash.Fea
 		uctx = unleashCTX.Context{
 			UserId: orgID,
 			Properties: map[string]string{
-				"org_id": orgID,
+				"orgId": orgID,
 			},
 		}
 	}
