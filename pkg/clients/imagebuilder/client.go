@@ -369,7 +369,7 @@ func (c *Client) ComposeInstaller(ctx context.Context, image *models.Image) (*mo
 	if image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
 		users = append(users, User{Name: image.Installer.Username,
 			SSHKey: strings.TrimSpace(image.Installer.SSHKey),
-			Groups: []string{image.Installer.Username, "wheel"}})
+			Groups: []string{"wheel"}})
 	}
 
 	req := &ComposeRequest{
