@@ -71,7 +71,7 @@ func NewPlatformClient(ctx context.Context, proxy string) HTTPRequestDoer {
 		}
 	}
 
-	var doer HTTPRequestDoer = &http.Client{Transport: rt}
+	var doer HTTPRequestDoer = ConfigureClientWithTLS(&http.Client{Transport: rt})
 
 	if logrus.IsLevelEnabled(logrus.TraceLevel) && config.Get().Local {
 		doer = &LoggingDoer{
