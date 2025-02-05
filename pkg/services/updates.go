@@ -462,6 +462,11 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 	}
 	repoURL := fmt.Sprintf("%s://%s/api/edge/v1/storage/update-repos/%d", edgeCertAPIBaseURL.Scheme, edgeCertAPIBaseURL.Host, templateInfo.UpdateTransactionID)
 
+	// override the repo URL with the Pulp Distribution URL
+	if feature.PulpIntegration.IsEnabledCtx(s.ctx) {
+		repoURL = templateInfo.RemoteURL
+	}
+
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
