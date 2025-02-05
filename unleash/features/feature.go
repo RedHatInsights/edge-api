@@ -43,11 +43,6 @@ var KafkaLogging = &Flag{Name: "edge-management.kafka_logging", EnvVar: "KAFKA_L
 // JOB QUEUE FLAGS
 var JobQueue = &Flag{Name: "edge-management.job_queue", EnvVar: "FEATURE_JOBQUEUE"}
 
-// IMAGE FEATURE FLAGS
-
-// BuildUpdateRepoWithOldCommits is the feature flag for services.BuildUpdateRepo() to enable oldCommits feature
-var BuildUpdateRepoWithOldCommits = &Flag{Name: "edge-management.build_update_repo_with_old_commits", EnvVar: "FEATURE_BUILD_UPDATE_REPO_WITH_OLD_COMMITS"}
-
 // DEVICE FEATURE FLAGS
 
 // DeviceSync is the feature flag for routes.CreateImageUpdate() EDA code
@@ -84,9 +79,6 @@ var CleanUPDevices = &Flag{Name: "edge-management.cleanup_devices", EnvVar: "FEA
 var CleanUPOrphanCommits = &Flag{Name: "edge-management.cleanup_orphan_commits", EnvVar: "FEATURE_CLEANUP_ORPHAN_COMMITS"}
 
 // STATIC DELTA FLAGS
-
-// SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
-var SkipUpdateRepo = &Flag{Name: "edge-management.skip_update_repo", EnvVar: "FEATURE_SKIP_UPDATE_REPO"}
 
 // HideCreateGroup toggles creation of static deltas
 var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
