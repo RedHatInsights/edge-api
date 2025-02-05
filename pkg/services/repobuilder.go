@@ -350,11 +350,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(ctx context.Context, id uint) (*models.Up
 		if err != nil {
 			return nil, err
 		}
-		update.Repo.URL = updateCommit.Repo.ContentURL(ctx)
+		update.Repo.URL = updateCommit.Repo.DistributionURL(ctx)
 		rb.log.WithField("update_transaction", update).Info("UPGRADE: point update to commit repo")
 	}
 
-	rb.log.WithField("repo", update.Repo.ContentURL(ctx)).Info("Update repo URL")
+	rb.log.WithField("repo", update.Repo.DistributionURL(ctx)).Info("Update repo URL")
 	update.Repo.Status = models.RepoStatusSuccess
 	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 		return nil, err
