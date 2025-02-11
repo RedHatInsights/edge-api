@@ -13,7 +13,7 @@ func addAuthenticationHeader(ctx context.Context, req *http.Request) error {
 	c := config.Get()
 
 	// always add correlation id
-	req.Header.Add("Correlation-Id", request_id.GetReqID(ctx))
+	req.Header.Add("Correlation-ID", request_id.GetReqID(ctx))
 
 	// add service account header if we are using oauth2 (dev setup)
 	if c.PulpOauth2URL != "" && c.PulpOauth2ClientID != "" && c.PulpOauth2ClientSecret != "" {
