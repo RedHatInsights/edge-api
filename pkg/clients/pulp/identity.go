@@ -21,10 +21,10 @@ func addAuthenticationHeader(ctx context.Context, req *http.Request) error {
 		if err != nil {
 			return err
 		}
+	} else {
+		// add service account mock header if we are
+		clients.AddBasicCredentialsHeader(ctx, req)
 	}
-
-	// add service account mock header if we are
-	clients.AddBasicCredentialsHeader(ctx, req)
 
 	return nil
 }

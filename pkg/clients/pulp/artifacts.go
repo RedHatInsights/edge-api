@@ -117,7 +117,7 @@ func (ps *PulpService) ArtifactsCreatePipe(ctx context.Context, filename string)
 
 	if resp.JSON201 == nil {
 		return nil, fmt.Errorf("unexpected response: %d, correlation id: %s, bytes written/size: %d/%d, body: %s",
-			resp.StatusCode(), resp.HTTPResponse.Header.Get("Correlation-Id"), written, stat.Size(), string(resp.Body))
+			resp.StatusCode(), resp.HTTPResponse.Header.Get("Correlation-ID"), written, stat.Size(), string(resp.Body))
 	}
 
 	return resp.JSON201, nil
@@ -198,7 +198,7 @@ func (ps *PulpService) ArtifactsCreate(ctx context.Context, filename string) (*A
 	}
 
 	if resp.JSON201 == nil {
-		return nil, fmt.Errorf("unexpected response: %d, correlation id: %s, body: %s", resp.StatusCode(), resp.HTTPResponse.Header.Get("Correlation-Id"), string(resp.Body))
+		return nil, fmt.Errorf("unexpected response: %d, correlation id: %s, body: %s", resp.StatusCode(), resp.HTTPResponse.Header.Get("Correlation-ID"), string(resp.Body))
 	}
 
 	return resp.JSON201, nil
