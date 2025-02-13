@@ -62,11 +62,12 @@ type Commit struct {
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
 	Model
-	URL        string `json:"RepoURL"`          // AWS repo URL
-	Status     string `json:"RepoStatus"`       // AWS repo upload status
-	PulpID     string `json:"pulp_repo_id"`     // Pulp Repo ID (used for updates)
-	PulpURL    string `json:"pulp_repo_url"`    // Distribution URL returned from Pulp
-	PulpStatus string `json:"pulp_repo_status"` // Status of Pulp repo import
+	URL          string `json:"RepoURL"`          // AWS repo URL
+	Status       string `json:"RepoStatus"`       // AWS repo upload status
+	ParentTarURL string `json:"parent_tar_url"`   // AWS parent commit tarfile URL (for updates)
+	PulpID       string `json:"pulp_repo_id"`     // Pulp Repo ID (used for updates)
+	PulpURL      string `json:"pulp_repo_url"`    // Distribution URL returned from Pulp
+	PulpStatus   string `json:"pulp_repo_status"` // Status of Pulp repo import
 }
 
 // ContentURL is the URL for internal and Image Builder access to the content in a Pulp repo

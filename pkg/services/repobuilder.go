@@ -375,7 +375,38 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 	}
 
 	var err error
-	log.WithContext(ctx).Debug("Storing repo via Pulp")
+
+	log.WithContext(ctx).WithFields(log.Fields{
+		"org_id":                   cmt.OrgID,
+		"repo_id":                  cmt.RepoID,
+		"commit_tar_url":           cmt.ImageBuildTarURL,
+		"repo_pulp_id":             repo.PulpID,
+		"repo_pulp_url":            repo.PulpURL,
+		"commit_ostree_parent_ref": cmt.OSTreeParentRef,
+		"parent_tarfile_url":       repo.ParentTarURL,
+	}).Debug("Storing repo via Pulp")
+
+	// Check if this is an update and the parent tarfile is stored in Edge API's AWS backing store.
+	// if yes, we need to import the parent first to create the repo
+	// NOTE: this is because if a parent was specified to create the commit via Image Builder,
+	// the Pulp OSTree import requires the parent.
+	if repo.PulpID == "" && repo.ParentTarURL != "" {
+		repo.PulpID, repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, repo.ParentTarURL,
+			repo.PulpID, repo.PulpURL, cmt.OSTreeParentRef)
+		if err != nil {
+			log.WithContext(ctx).WithField("error", err.Error()).Error("Error storing parent commit in Pulp OSTree repo")
+
+			repo.PulpStatus = models.RepoStatusError
+			result := db.DB.Save(&repo)
+			if result.Error != nil {
+				rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+				return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
+			}
+
+			return repo, err
+		}
+	}
+
 	repo.PulpID, repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL,
 		repo.PulpID, repo.PulpURL, cmt.OSTreeParentRef)
 	if err != nil {
@@ -527,15 +558,18 @@ func (rb *RepoBuilder) CommitTarDownload(c *models.Commit, dest string) (string,
 }
 
 func (rb *RepoBuilder) uploadTarRepo(orgID, imageName string, repoID int) (string, error) {
-	rb.log.Info("Start upload tar repo")
 	uploadPath := fmt.Sprintf("v2/%s/tar/%v/%s", orgID, repoID, imageName)
 	uploadPath = filepath.Clean(uploadPath)
+	rb.log.WithFields(log.Fields{
+		"image_name":  imageName,
+		"upload_path": uploadPath,
+	}).Info("Start upload tar repo")
 	url, err := rb.FilesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
 	}
-	rb.log.Info("Finish upload tar repo")
+	rb.log.WithField("commit_tar_url", url).Info("Finish upload tar repo")
 
 	return url, nil
 }
@@ -552,7 +586,7 @@ func (rb *RepoBuilder) CommitTarUpload(c *models.Commit, tarFileName string) err
 	}
 	repoID := int(*c.RepoID)
 	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID})
-	rb.log.Info("Uploading repo")
+	rb.log.Info("Uploading commit tarfile")
 	repoTarURL, err := rb.uploadTarRepo(c.OrgID, tarFileName, repoID)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Failed to upload repo")
@@ -565,7 +599,7 @@ func (rb *RepoBuilder) CommitTarUpload(c *models.Commit, tarFileName string) err
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")
 		return result.Error
 	}
-	rb.log.Info("Repo uploaded")
+	rb.log.Info("Commit tarfile uploaded")
 	return nil
 }
 

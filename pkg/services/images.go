@@ -587,6 +587,13 @@ func (s *ImageService) UpdateImage(ctx context.Context, image *models.Image, pre
 				PulpID:  repo.PulpID,
 				PulpURL: repo.PulpURL,
 			}
+
+			// Storing the parent tarfile URL with the child repo
+			// because it is needed to import into Pulp
+			// (and the way the schema relationships currently work)
+			if repo.PulpID == "" {
+				image.Commit.Repo.ParentTarURL = previousSuccessfulImage.Commit.ImageBuildTarURL
+			}
 		}
 
 		if config.DistributionsRefs[previousSuccessfulImage.Distribution] != config.DistributionsRefs[image.Distribution] {
