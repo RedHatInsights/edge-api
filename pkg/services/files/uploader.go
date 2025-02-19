@@ -197,7 +197,7 @@ func (u *S3Uploader) UploadFileWithACL(fname string, uploadPath string, acl stri
 	}
 
 	// Upload the file to S3.
-	_, err = u.Client.PutObject(f, u.Bucket, uploadPath, acl)
+	_, err = u.Client.Upload(f, u.Bucket, uploadPath, acl)
 
 	if err != nil {
 		u.log.WithField("error", err.Error()).Error("Error uploading to AWS S3")
