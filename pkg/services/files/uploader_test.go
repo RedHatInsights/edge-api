@@ -167,7 +167,7 @@ var _ = Describe("Uploader Test", func() {
 						_ = os.Remove(file.Name())
 					}(file)
 
-					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), config.Get().BucketName, uploadPath, acl).Return(nil, nil)
+					s3Client.EXPECT().Upload(gomock.AssignableToTypeOf(&os.File{}), config.Get().BucketName, uploadPath, acl).Return(nil, nil)
 					uploadURL, err := s3Uploader.UploadFile(file.Name(), uploadPath)
 					Expect(err).ToNot(HaveOccurred())
 					expectedURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s3Uploader.Bucket, conf.BucketRegion, uploadPath)
@@ -185,7 +185,7 @@ var _ = Describe("Uploader Test", func() {
 						_ = os.Remove(file.Name())
 					}(file)
 
-					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), config.Get().BucketName, uploadPath, acl).Return(nil, nil)
+					s3Client.EXPECT().Upload(gomock.AssignableToTypeOf(&os.File{}), config.Get().BucketName, uploadPath, acl).Return(nil, nil)
 
 					uploadURL, err := s3Uploader.UploadFileWithACL(file.Name(), uploadPath, "")
 					Expect(err).ToNot(HaveOccurred())
@@ -200,15 +200,15 @@ var _ = Describe("Uploader Test", func() {
 					sourceFilePath := filepath.Join(os.TempDir(), sourceFileName)
 
 					// should not call S3Client PuObject
-					s3Client.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+					s3Client.EXPECT().Upload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 					_, err := s3Uploader.UploadFile(sourceFilePath, uploadPath)
 					expectedErrorMessage := fmt.Sprintf("%s: no such file or directory", sourceFilePath)
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(expectedErrorMessage))
 				})
 
-				It("UploadFile should return error when PutObject fails", func() {
-					expectedError := errors.New("s3Client. PutObject failed to upload file")
+				It("UploadFile should return error when Upload fails", func() {
+					expectedError := errors.New("s3Client. Upload failed to upload file")
 					uploadPath := faker.UUIDHyphenated() + "/" + faker.UUIDHyphenated()
 
 					file, err := os.CreateTemp(os.TempDir(), "uploader-*.source-file ")
@@ -219,7 +219,7 @@ var _ = Describe("Uploader Test", func() {
 						_ = os.Remove(file.Name())
 					}(file)
 
-					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), config.Get().BucketName, uploadPath, acl).Return(nil, expectedError)
+					s3Client.EXPECT().Upload(gomock.AssignableToTypeOf(&os.File{}), config.Get().BucketName, uploadPath, acl).Return(nil, expectedError)
 					_, err = s3Uploader.UploadFile(file.Name(), uploadPath)
 					Expect(err).To(HaveOccurred())
 					Expect(err).To(Equal(err))
@@ -247,7 +247,7 @@ var _ = Describe("Uploader Test", func() {
 					wg := sync.WaitGroup{}
 					wg.Add(1)
 					expectedFilePath := fmt.Sprintf("%s/%s", orgID, strings.TrimPrefix(sourceFilePath, conf.RepoTempPath))
-					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
+					s3Client.EXPECT().Upload(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
 						DoAndReturn(func(arg0, arg1, arg2, arg3 interface{}) (interface{}, error) {
 							defer wg.Done()
 							return nil, nil
@@ -282,11 +282,11 @@ var _ = Describe("Uploader Test", func() {
 					wg := sync.WaitGroup{}
 					wg.Add(1)
 					expectedFilePath := fmt.Sprintf("%s/%s", orgID, strings.TrimPrefix(sourceFilePath, conf.RepoTempPath))
-					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
+					s3Client.EXPECT().Upload(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
 						DoAndReturn(func(arg0, arg1, arg2, arg3 interface{}) (interface{}, error) {
 							return nil, errors.New("Error uploading file")
 						})
-					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
+					s3Client.EXPECT().Upload(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
 						DoAndReturn(func(arg0, arg1, arg2, arg3 interface{}) (interface{}, error) {
 							defer wg.Done()
 							return nil, nil
