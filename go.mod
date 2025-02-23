@@ -101,4 +101,4 @@ require (
 )
 
 // fixes CVE-2023-44487
-replace google.golang.org/grpc => google.golang.org/grpc v1.58.3
+replace google.golang.org/grpc => google.golang.org/grpc v1.70.0
