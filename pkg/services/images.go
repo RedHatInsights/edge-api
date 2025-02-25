@@ -865,7 +865,7 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 	return nil
 }
 
-func (s *ImageService) runPulpRepoProcess(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
+func (s *ImageService) runPulpRepoProcess(ctx context.Context, imagesetID uint, repo *models.Repo) (*models.Repo, error) {
 	repo.PulpStatus = models.RepoStatusBuilding
 	result := db.DB.Save(&repo)
 	if result.Error != nil {
@@ -873,7 +873,7 @@ func (s *ImageService) runPulpRepoProcess(ctx context.Context, repo *models.Repo
 		return repo, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
 
-	repo, err := s.RepoBuilder.StoreRepo(ctx, repo)
+	repo, err := s.RepoBuilder.StoreRepo(ctx, imagesetID, repo)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error importing ostree repo into Pulp")
 		repo.PulpStatus = models.RepoStatusError
@@ -928,7 +928,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	// Pulp repo process needs to run if AWS repo process is disabled (flag set true)
 	if feature.PulpIntegration.IsEnabledCtx(ctx) || feature.PulpIntegrationDisableAWSRepoStore.IsEnabledCtx(ctx) {
 		s.log.Info("Running Pulp repo process")
-		repo, err = s.runPulpRepoProcess(ctx, repo)
+		repo, err = s.runPulpRepoProcess(ctx, *img.ImageSetID, repo)
 		if err != nil {
 			return repo, err
 		}

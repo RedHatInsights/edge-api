@@ -29,7 +29,7 @@ var BuildCommand = exec.Command
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(ctx context.Context, id uint) (*models.UpdateTransaction, error)
-	StoreRepo(ctx context.Context, repo *models.Repo) (*models.Repo, error)
+	StoreRepo(ctx context.Context, imagesetID uint, repo *models.Repo) (*models.Repo, error)
 	ImportRepo(ctx context.Context, r *models.Repo) (*models.Repo, error)
 	CommitTarDownload(c *models.Commit, dest string) (string, error)
 	CommitTarExtract(c *models.Commit, tarFileName string, dest string) error
@@ -112,7 +112,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ctx context.Context, id uint) (*models.Up
 }
 
 // StoreRepo requests Pulp to create/update an ostree repo from an IB commit
-func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
+func (rb *RepoBuilder) StoreRepo(ctx context.Context, imagesetID uint, repo *models.Repo) (*models.Repo, error) {
 	var cmt models.Commit
 	cmtDB := db.DB.Where("repo_id = ?", repo.ID).First(&cmt)
 	if cmtDB.Error != nil {
@@ -121,7 +121,7 @@ func (rb *RepoBuilder) StoreRepo(ctx context.Context, repo *models.Repo) (*model
 
 	var err error
 	log.WithContext(ctx).Debug("Storing repo via Pulp")
-	repo.PulpID, repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, *cmt.RepoID, cmt.ImageBuildTarURL,
+	repo.PulpID, repo.PulpURL, err = repostore.PulpRepoStore(ctx, cmt.OrgID, imagesetID, cmt.ImageBuildTarURL,
 		repo.PulpID, repo.PulpURL, cmt.OSTreeParentRef)
 	if err != nil {
 		log.WithContext(ctx).WithField("error", err.Error()).Error("Error storing Image Builder commit in Pulp OSTree repo")
