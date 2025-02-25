@@ -137,16 +137,16 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) RepoPullLocalStaticDeltas(u, o, 
 }
 
 // StoreRepo mocks base method.
-func (m *MockRepoBuilderInterface) StoreRepo(ctx context.Context, repo *models.Repo) (*models.Repo, error) {
+func (m *MockRepoBuilderInterface) StoreRepo(ctx context.Context, imagesetID uint, repo *models.Repo) (*models.Repo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StoreRepo", ctx, repo)
+	ret := m.ctrl.Call(m, "StoreRepo", ctx, imagesetID, repo)
 	ret0, _ := ret[0].(*models.Repo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // StoreRepo indicates an expected call of StoreRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) StoreRepo(ctx, repo interface{}) *gomock.Call {
+func (mr *MockRepoBuilderInterfaceMockRecorder) StoreRepo(ctx, imagesetID, repo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).StoreRepo), ctx, repo)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).StoreRepo), ctx, imagesetID, repo)
 }

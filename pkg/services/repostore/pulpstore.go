@@ -14,7 +14,7 @@ import (
 )
 
 // PulpRepoStore imports an OSTree repo into a Pulp repository
-func PulpRepoStore(ctx context.Context, orgID string, edgeRepoID uint,
+func PulpRepoStore(ctx context.Context, orgID string, imagesetID uint,
 	imageBuilderTarURL string, pulpParentID string, pulpParentURL string,
 	pulpParentRef string) (string, string, error) {
 	// create a pulp service with a pre-defined name
@@ -59,7 +59,9 @@ func PulpRepoStore(ctx context.Context, orgID string, edgeRepoID uint,
 		).Info("Existing repo updated with a new commit")
 	} else {
 		// create a Pulp OSTree repository
-		repoName := fmt.Sprintf("repo-%s-%d", orgID, edgeRepoID)
+		repoName := fmt.Sprintf("repo-%s-%d", orgID, imagesetID)
+
+		log.WithContext(ctx).WithField("repo_name", repoName).Debug("Creating pulp ostree repo")
 
 		distBaseURL, pulpHref, err = createOSTreeRepository(ctx, pserv, orgID, repoName)
 		if err != nil {
