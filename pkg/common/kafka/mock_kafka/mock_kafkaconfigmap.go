@@ -7,7 +7,7 @@ package mock_kafkacommon
 import (
 	reflect "reflect"
 
-	kafka "github.com/confluentinc/confluent-kafka-go/kafka"
+	kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	gomock "github.com/golang/mock/gomock"
 )
 
