@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	v1 "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
