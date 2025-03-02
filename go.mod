@@ -1,6 +1,8 @@
 module github.com/redhatinsights/edge-api
 
-go 1.22
+go 1.22.0
+
+toolchain go1.22.9
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.1.4
@@ -21,7 +23,7 @@ require (
 	github.com/magiconair/properties v1.8.9
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.36.1
+	github.com/onsi/gomega v1.36.2
 	github.com/prometheus/client_golang v1.21.0
 	github.com/redhatinsights/app-common-go v1.6.8
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
