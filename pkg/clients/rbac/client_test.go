@@ -11,8 +11,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/bxcodec/faker/v3"
-	. "github.com/onsi/ginkgo" // nolint: revive
-	. "github.com/onsi/gomega" // nolint: revive
+	. "github.com/onsi/ginkgo/v2" // nolint: revive
+	. "github.com/onsi/gomega"    // nolint: revive
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
