@@ -18,8 +18,8 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo" // nolint: revive
-	. "github.com/onsi/gomega" // nolint: revive
+	. "github.com/onsi/ginkgo/v2" // nolint: revive
+	. "github.com/onsi/gomega"    // nolint: revive
 	"gorm.io/gorm"
 )
 
