@@ -10,7 +10,7 @@ import (
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
