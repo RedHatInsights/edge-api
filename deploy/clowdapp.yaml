@@ -28,30 +28,6 @@ objects:
     name: edge-pulp-password
   stringData:
     key: ${PULP_PASSWORD}
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: edge-pulp-test-s3
-  stringData:
-    region: ${PULP_S3_REGION}
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: edge-pulp-test-s3
-  stringData:
-    bucketname: ${PULP_S3_BUCKETNAME}
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: edge-pulp-test-s3
-  stringData:
-    accesskey: ${PULP_S3_ACCESSKEY}
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: edge-pulp-test-s3
-  stringData:
-    secretkey: ${PULP_S3_SECRETKEY}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -170,26 +146,6 @@ objects:
               key: key
         - name : PULP_CONTENT_URL
           value: ${PULP_CONTENT_URL}
-        - name : PULP_S3_REGION
-          valueFrom:
-            secretKeyRef:
-              name: edge-pulp-test-s3
-              key: region
-        - name : PULP_S3_BUCKETNAME
-          valueFrom:
-            secretKeyRef:
-              name: edge-pulp-test-s3
-              key: bucketname
-        - name : PULP_S3_ACCESSKEY
-          valueFrom:
-            secretKeyRef:
-              name: edge-pulp-test-s3
-              key: accesskey
-        - name : PULP_S3_SECRETKEY
-          valueFrom:
-            secretKeyRef:
-              name: edge-pulp-test-s3
-              key: secretkey
         - name : PULP_GUARD_SUBJECT_DN
           value: ${PULP_GUARD_SUBJECT_DN}
         resources:
