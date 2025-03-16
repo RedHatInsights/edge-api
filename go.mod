@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
-	github.com/confluentinc/confluent-kafka-go v1.9.2
+	github.com/confluentinc/confluent-kafka-go/v2 v2.8.0
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/getsentry/sentry-go/logrus v0.31.1

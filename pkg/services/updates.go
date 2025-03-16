@@ -16,7 +16,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
