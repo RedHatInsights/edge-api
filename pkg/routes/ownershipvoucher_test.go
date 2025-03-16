@@ -13,8 +13,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/go-chi/chi/v5"
-	. "github.com/onsi/ginkgo" // nolint: revive
-	. "github.com/onsi/gomega" // nolint: revive
+	. "github.com/onsi/ginkgo/v2" // nolint: revive
+	. "github.com/onsi/gomega"    // nolint: revive
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
 

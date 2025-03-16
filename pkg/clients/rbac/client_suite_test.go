@@ -3,8 +3,8 @@ package rbac_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo" // nolint: revive
-	. "github.com/onsi/gomega" // nolint: revive
+	. "github.com/onsi/ginkgo/v2" // nolint: revive
+	. "github.com/onsi/gomega"    // nolint: revive
 )
 
 func TestRbacClient(t *testing.T) {

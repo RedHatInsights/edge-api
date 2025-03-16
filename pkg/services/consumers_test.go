@@ -4,7 +4,7 @@ package services_test
 
 import (
 	"github.com/bxcodec/faker/v3"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/pkg/services"

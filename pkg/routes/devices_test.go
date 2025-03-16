@@ -26,7 +26,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common/seeder"
 	log "github.com/sirupsen/logrus"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	testHelpers "github.com/redhatinsights/edge-api/internal/testing"

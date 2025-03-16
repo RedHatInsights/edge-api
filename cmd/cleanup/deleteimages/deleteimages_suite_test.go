@@ -10,8 +10,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 
-	. "github.com/onsi/ginkgo" // nolint: revive
-	. "github.com/onsi/gomega" // nolint: revive
+	. "github.com/onsi/ginkgo/v2" // nolint: revive
+	. "github.com/onsi/gomega"    // nolint: revive
 )
 
 func TestMigrate(t *testing.T) {

@@ -21,7 +21,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"

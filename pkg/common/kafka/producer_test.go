@@ -8,7 +8,7 @@ import (
 	"github.com/bxcodec/faker/v3"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"

@@ -21,7 +21,7 @@ import (
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
