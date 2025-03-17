@@ -14,7 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/bxcodec/faker/v3"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gorm.io/gorm"
 )
