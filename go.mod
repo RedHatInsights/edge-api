@@ -1,6 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 go 1.22
+toolchain go1.24.1
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.3.0
@@ -8,7 +9,7 @@ require (
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/confluentinc/confluent-kafka-go v1.9.2
-	github.com/getkin/kin-openapi v0.128.0
+	github.com/getkin/kin-openapi v0.131.0
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/getsentry/sentry-go/logrus v0.31.1
 	github.com/ghodss/yaml v1.0.0
@@ -53,7 +54,6 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
@@ -69,6 +69,8 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
+	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
+	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
