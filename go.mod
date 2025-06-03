@@ -1,6 +1,6 @@
 module github.com/redhatinsights/edge-api
 
-go 1.22
+go 1.23
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.3.0
@@ -24,7 +24,7 @@ require (
 	github.com/onsi/gomega v1.36.1
 	github.com/prometheus/client_golang v1.21.1
 	github.com/redhatinsights/app-common-go v1.6.8
-	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
+	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
