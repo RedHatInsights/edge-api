@@ -3,7 +3,7 @@ module github.com/redhatinsights/edge-api
 go 1.22
 
 require (
-	github.com/Unleash/unleash-client-go/v4 v4.3.0
+	github.com/Unleash/unleash-client-go/v4 v4.5.0
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
@@ -35,7 +35,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
