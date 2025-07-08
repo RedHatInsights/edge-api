@@ -1,3 +1,6 @@
+**NOTE**
+As of July 31, 2025, the hosted edge management service will no longer be supported. This means that pushing image updates to Immutable (OSTree) systems using the Hybrid Cloud Console will be discontinued, and this repo will be archived. For an alternative way to manage edge systems, customers are encouraged to explore [Red Hat Edge Manager (RHEM)](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/managing_device_fleets_with_the_red_hat_edge_manager/index).
+
 # Edge API
 
 [![Build Status](https://app.travis-ci.com/RedHatInsights/edge-api.svg?branch=main)](https://app.travis-ci.com/RedHatInsights/edge-api)
