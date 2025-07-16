@@ -18,9 +18,10 @@ const distRHEL92 = "rhel-92"
 const distRHEL93 = "rhel-93"
 const distRHEL94 = "rhel-94"
 const distRHEL95 = "rhel-95"
+const distRHEL96 = "rhel-96"
 
 // DefaultDistribution set the default image distribution in case miss it
-const DefaultDistribution = distRHEL90
+const DefaultDistribution = distRHEL96
 
 // ostree ref for supported distributions
 const OstreeRefRHEL8 = "rhel/8/x86_64/edge"
@@ -44,34 +45,36 @@ var RHEL9 = []string{"ansible-core"}
 
 // DistributionsPackages add packages by image
 var DistributionsPackages = map[string][]string{
-	distRHEL84: RHEL8,
-	distRHEL85: RHEL8,
-	distRHEL86: RHEL8X,
-	distRHEL87: RHEL8X,
-	distRHEL88: RHEL8X,
-	distRHEL89: RHEL8X,
+	distRHEL84:  RHEL8,
+	distRHEL85:  RHEL8,
+	distRHEL86:  RHEL8X,
+	distRHEL87:  RHEL8X,
+	distRHEL88:  RHEL8X,
+	distRHEL89:  RHEL8X,
 	distRHEL810: RHEL8X,
-	distRHEL90: RHEL9,
-	distRHEL91: RHEL9,
-	distRHEL92: RHEL9,
-	distRHEL93: RHEL9,
-	distRHEL94: RHEL9,
-	distRHEL95: RHEL9,
+	distRHEL90:  RHEL9,
+	distRHEL91:  RHEL9,
+	distRHEL92:  RHEL9,
+	distRHEL93:  RHEL9,
+	distRHEL94:  RHEL9,
+	distRHEL95:  RHEL9,
+	distRHEL96:  RHEL9,
 }
 
 // DistributionsRefs set the ref to Images
 var DistributionsRefs = map[string]string{
-	distRHEL84: OstreeRefRHEL8,
-	distRHEL85: OstreeRefRHEL8,
-	distRHEL86: OstreeRefRHEL8,
-	distRHEL87: OstreeRefRHEL8,
-	distRHEL88: OstreeRefRHEL8,
-	distRHEL89: OstreeRefRHEL8,
+	distRHEL84:  OstreeRefRHEL8,
+	distRHEL85:  OstreeRefRHEL8,
+	distRHEL86:  OstreeRefRHEL8,
+	distRHEL87:  OstreeRefRHEL8,
+	distRHEL88:  OstreeRefRHEL8,
+	distRHEL89:  OstreeRefRHEL8,
 	distRHEL810: OstreeRefRHEL8,
-	distRHEL90: OstreeRefRHEL9,
-	distRHEL91: OstreeRefRHEL9,
-	distRHEL92: OstreeRefRHEL9,
-	distRHEL93: OstreeRefRHEL9,
-	distRHEL94: OstreeRefRHEL9,
-	distRHEL95: OstreeRefRHEL9,
+	distRHEL90:  OstreeRefRHEL9,
+	distRHEL91:  OstreeRefRHEL9,
+	distRHEL92:  OstreeRefRHEL9,
+	distRHEL93:  OstreeRefRHEL9,
+	distRHEL94:  OstreeRefRHEL9,
+	distRHEL95:  OstreeRefRHEL9,
+	distRHEL96:  OstreeRefRHEL9,
 }
