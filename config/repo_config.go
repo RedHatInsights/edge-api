@@ -18,7 +18,7 @@ const distRHEL92 = "rhel-92"
 const distRHEL93 = "rhel-93"
 const distRHEL94 = "rhel-94"
 const distRHEL95 = "rhel-95"
-const distRHEL96 = "rhel-96"
+const distRHEL96 = "rhel-9.6"
 
 // DefaultDistribution set the default image distribution in case miss it
 const DefaultDistribution = distRHEL96
