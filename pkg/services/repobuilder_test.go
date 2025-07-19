@@ -142,7 +142,10 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		var mockFilesService *mock_services.MockFilesService
 		var mockDownloaderService *mock_services.MockDownloader
 		var downloadService services.RepoBuilder
-		var fileURL = "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"
+		// FIXME: this needs to be mock'd instead of using a live URL
+		// var fileURL = "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"
+		var fileURL = "https://www.fedorapeople.org"
+
 		var fileDest = "/tmp/download/"
 		var fileName = "repo.tar"
 		BeforeEach(func() {
