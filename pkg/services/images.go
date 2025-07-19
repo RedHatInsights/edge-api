@@ -457,6 +457,10 @@ func (s *ImageService) ValidateImagePackage(packageName string, image *models.Im
 		return err
 	}
 	if res.Meta.Count == 0 {
+		s.log.WithFields(log.Fields{
+			"package":    packageName,
+			"meta_count": res.Meta.Count,
+		}).Error("package does not exist")
 		return new(PackageNameDoesNotExist)
 	}
 	for _, pkg := range res.Data {
