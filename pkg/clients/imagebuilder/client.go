@@ -656,7 +656,12 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 
 	// build the correct URL using the package name
 	url := fmt.Sprintf("%s/api/image-builder/v1/packages?distribution=%s&architecture=%s&search=%s", cfg.ImageBuilderConfig.URL, dist, arch, url.QueryEscape(packageName))
-	c.log.WithField("package", packageName).Info("Searching image builder for rhel package")
+	c.log.WithFields(log.Fields{
+		"package": packageName,
+		"url":     url,
+		"dist":    dist,
+		"arch":    arch,
+	}).Info("Searching image builder for rhel package")
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
