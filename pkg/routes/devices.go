@@ -267,7 +267,9 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		case *services.UpdateNotFoundError:
 			apiError = errors.NewNotFound("Could not find update")
 		default:
+			contextServices.Log.WithField("error", err.Error()).Error("Returning 500 for undefined error getting update available for device")
 			apiError = errors.NewInternalServerError()
+			apiError.SetTitle("undefined error getting update available for device")
 		}
 		respondWithAPIError(w, contextServices.Log, apiError)
 		return
@@ -290,7 +292,9 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 		case *services.DeviceNotFoundError:
 			apiError = errors.NewNotFound("Could not find device")
 		default:
+			contextServices.Log.WithField("error", err.Error()).Error("Returning 500 for undefined error getting device image info")
 			apiError = errors.NewInternalServerError()
+			apiError.SetTitle("undefined error getting device image info")
 		}
 		respondWithAPIError(w, contextServices.Log, apiError)
 		return
@@ -331,7 +335,9 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		case *services.DeviceNotFoundError:
 			apiError = errors.NewNotFound("Could not find device")
 		default:
+			contextServices.Log.WithField("error", err.Error()).Error("Returning 500 for undefined error getting device")
 			apiError = errors.NewInternalServerError()
+			apiError.SetTitle("undefined error getting device")
 		}
 		respondWithAPIError(w, contextServices.Log, apiError)
 		return
