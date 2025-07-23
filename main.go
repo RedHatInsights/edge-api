@@ -86,12 +86,6 @@ func logMiddleware(next http.Handler) http.Handler {
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 		org_id, _ := common.GetOrgID(r)
-		direct_org_id := identity.GetIdentity(r.Context()).Identity.OrgID
-		log.WithContext(r.Context()).WithFields(log.Fields{
-			"common_org_id": org_id,
-			"direct_org_id": direct_org_id,
-		}).Debug("logging common and direct org_id")
-
 		fields := log.Fields{
 			"request_id": request_id.GetReqID(r.Context()),
 			"org_id":     org_id,
@@ -120,7 +114,6 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		middleware.RealIP,
 		middleware.Recoverer,
 		setupDocsMiddleware,
-		logMiddleware,
 	)
 
 	// Unauthenticated routes
@@ -135,6 +128,7 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		authRoute.Use(identity.EnforceIdentity)
 	}
 
+	authRoute.Use(logMiddleware)
 	authRoute.Route("/api/edge/v1", func(edgerRouter chi.Router) {
 		// Untangling the dependencies, these routes do not use the dependencies context
 		edgerRouter.Route("/storage", routes.MakeStorageRouter)
