@@ -86,6 +86,12 @@ func logMiddleware(next http.Handler) http.Handler {
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 		org_id, _ := common.GetOrgID(r)
+		direct_org_id := identity.GetIdentity(r.Context()).Identity.OrgID
+		log.WithContext(r.Context()).WithFields(log.Fields{
+			"common_org_id": org_id,
+			"direct_org_id": direct_org_id,
+		}).Debug("logging common and direct org_id")
+
 		fields := log.Fields{
 			"request_id": request_id.GetReqID(r.Context()),
 			"org_id":     org_id,
