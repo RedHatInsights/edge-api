@@ -1,0 +1,33 @@
+{
+    "image_name": "${IMAGE_NAME}",
+    "customizations": {
+        "packages": [
+            "rhc",
+            "rhc-worker-playbook",
+            "subscription-manager",
+            "subscription-manager-plugin-ostree",
+            "insights-client",
+            "ansible-core"
+        ],
+        "payload_repositories": [],
+        "subscription": {
+            "organization": ${ORG_ID_NUMBER},
+            "activation-key": "${ACTIVATION_KEY}",
+            "base-url": "https://cdn.redhat.com/",
+            "server-url": "subscription.rhsm.redhat.com",
+            "insights": true,
+            "rhc": true
+        }
+    },
+    "distribution": "rhel-9.6",
+    "image_requests": [
+        {
+            "architecture": "x86_64",
+            "image_type": "rhel-edge-commit",
+            "upload_request": {
+                "options": {},
+                "type": "aws.s3"
+            }
+        }
+    ]
+}
