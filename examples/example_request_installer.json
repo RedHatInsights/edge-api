@@ -1,0 +1,45 @@
+{
+    "image_name": "${IMAGE_NAME}",
+    "customizations": {
+        "installer": {
+            "sudo-nopasswd": [
+                "%wheel"
+            ],
+            "unattended": true
+        },
+        "packages": [],
+        "users": [
+            {
+                "groups": [
+                    "wheel"
+                ],
+                "name": "${ADMIN_USERNAME}",
+                "ssh_key": "${PUBLIC_SSH_KEY}"
+            }
+        ],
+        "subscription": {
+            "organization": ${ORG_ID_NUMBER},
+            "activation-key": "${ACTIVATION_KEY}",
+            "base-url": "https://cdn.redhat.com/",
+            "server-url": "subscription.rhsm.redhat.com",
+            "insights": true,
+            "rhc": true
+        }
+    },
+    "distribution": "rhel-9.6",
+    "image_requests": [
+        {
+            "architecture": "x86_64",
+            "image_type": "rhel-edge-installer",
+            "ostree": {
+                "url": "${OSTREE_REPO_URL}",
+                "contenturl": "${OSTREE_REPO_URL}",
+                "ref": ""
+            },
+            "upload_request": {
+                "options": {},
+                "type": "aws.s3"
+            }
+        }
+    ]
+}
