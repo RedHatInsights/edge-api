@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.5.0
-	github.com/aws/aws-sdk-go v1.55.6
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/confluentinc/confluent-kafka-go v1.9.2
