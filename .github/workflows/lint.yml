@@ -21,7 +21,7 @@ jobs:
       - name: Display build environment
         run: printenv
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Checkout edge-api
 
       - uses: actions/setup-go@v5
@@ -53,7 +53,7 @@ jobs:
     name: OpenAPI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Checkout edge-api
 
       - uses: actions/setup-go@v5
@@ -82,7 +82,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Checkout edge-api
 
       - uses: actions/setup-go@v5
