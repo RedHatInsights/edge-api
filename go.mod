@@ -9,8 +9,8 @@ require (
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/getkin/kin-openapi v0.128.0
-	github.com/getsentry/sentry-go v0.35.0
-	github.com/getsentry/sentry-go/logrus v0.35.0
+	github.com/getsentry/sentry-go v0.35.1
+	github.com/getsentry/sentry-go/logrus v0.35.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-openapi/runtime v0.28.0
