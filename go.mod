@@ -12,7 +12,7 @@ require (
 	github.com/getsentry/sentry-go v0.35.0
 	github.com/getsentry/sentry-go/logrus v0.35.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-chi/chi/v5 v5.2.1
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-openapi/runtime v0.28.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
