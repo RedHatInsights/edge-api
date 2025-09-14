@@ -1,6 +1,8 @@
 module github.com/redhatinsights/edge-api
 
-go 1.23
+go 1.23.0
+
+toolchain go1.24.6
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.5.0
@@ -51,7 +53,7 @@ require (
 	github.com/go-openapi/strfmt v0.23.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-openapi/validate v0.24.0 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -87,13 +89,13 @@ require (
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	go.mongodb.org/mongo-driver v1.16.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/protobuf v1.36.1 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -101,6 +103,6 @@ require (
 )
 
 // fixes CVE-2023-44487
-replace google.golang.org/grpc => google.golang.org/grpc v1.58.3
+replace google.golang.org/grpc => google.golang.org/grpc v1.75.1
 
 replace github.com/golang/glog => github.com/golang/glog v1.2.5
