@@ -1,6 +1,8 @@
 module github.com/redhatinsights/edge-api
 
-go 1.23
+go 1.24.0
+
+toolchain go1.24.6
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.5.0
@@ -90,7 +92,7 @@ require (
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
