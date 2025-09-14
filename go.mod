@@ -1,6 +1,8 @@
 module github.com/redhatinsights/edge-api
 
-go 1.23
+go 1.23.0
+
+toolchain go1.24.6
 
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.5.0
@@ -76,23 +78,22 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/sagikazarmark/locafero v0.6.0 // indirect
+	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
-	github.com/spf13/afero v1.11.0 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
+	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	go.mongodb.org/mongo-driver v1.16.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
